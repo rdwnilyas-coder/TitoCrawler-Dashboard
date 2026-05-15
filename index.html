@@ -787,15 +787,9 @@
         </div>
       </div>
 
-      <div class="grid-2" style="margin-top:16px">
-        <div class="card">
-          <h3>Top halaman · paling banyak posting</h3>
-          <div class="chart chart-tall" id="fb-chart-top-pages"></div>
-        </div>
-        <div class="card">
-          <h3>🏷️ Top hashtag (kalau ada)</h3>
-          <div class="chart chart-tall" id="fb-chart-top-hashtags"></div>
-        </div>
+      <div class="card" style="margin-top:16px">
+        <h3>Top halaman · paling banyak posting</h3>
+        <div class="chart chart-tall" id="fb-chart-top-pages"></div>
       </div>
 
       <div class="card" style="margin-top:16px">
@@ -1658,7 +1652,7 @@
     function renderYTCLikes() {
       const el = $('#ytc-chart-likes');
       const chart = echarts.init(el);
-      const items = YTC.likesDist;
+      const items = YTC.likesDist.filter(d => d.count > 0);
       const labels = items.map(d => d.bucket);
       chart.setOption({
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
@@ -1900,7 +1894,7 @@
       _timelineBar('#ttc-chart-monthly', months, months.map(k => TTC.monthly[k]), 'Comments');
       _donut('#ttc-chart-length', TTC.lengthDist.filter(d => d.count > 0),
              'count', 'bucket', TT_DONUT);
-      _horizontalBar('#ttc-chart-likes', TTC.likesDist, 'count', 'bucket', '#a1a1aa');
+      _horizontalBar('#ttc-chart-likes', TTC.likesDist.filter(d => d.count > 0), 'count', 'bucket', '#a1a1aa');
       _horizontalBar('#ttc-chart-top-videos-bar',
         TTC.topVideosByComments.slice(0, 15).map(v => ({...v, label: v.title || v.post_id})),
         'fetched_comments', 'label', '#a1a1aa',
@@ -1986,7 +1980,7 @@
       _timelineBar('#igc-chart-monthly', months, months.map(k => IGC.monthly[k]), 'Comments');
       _donut('#igc-chart-length', IGC.lengthDist.filter(d => d.count > 0),
              'count', 'bucket', TT_DONUT);
-      _horizontalBar('#igc-chart-likes', IGC.likesDist, 'count', 'bucket', '#a1a1aa');
+      _horizontalBar('#igc-chart-likes', IGC.likesDist.filter(d => d.count > 0), 'count', 'bucket', '#a1a1aa');
       _horizontalBar('#igc-chart-top-posts-bar',
         IGC.topPostsByComments.slice(0, 15).map(v => ({...v, label: v.title || v.post_id})),
         'fetched_comments', 'label', '#a1a1aa',
@@ -2101,7 +2095,7 @@
       _timelineBar('#twc-chart-monthly', months, months.map(k => TWC.monthly[k]), 'Replies');
       _donut('#twc-chart-length', TWC.lengthDist.filter(d => d.count > 0),
              'count', 'bucket', TT_DONUT);
-      _horizontalBar('#twc-chart-likes', TWC.likesDist, 'count', 'bucket', '#a1a1aa');
+      _horizontalBar('#twc-chart-likes', TWC.likesDist.filter(d => d.count > 0), 'count', 'bucket', '#a1a1aa');
       _horizontalBar('#twc-chart-top-tweets-bar',
         TWC.topTweetsByReplies.slice(0, 15).map(v => ({...v, label: v.title || v.post_id})),
         'replies_count', 'label', '#a1a1aa',
@@ -2150,13 +2144,6 @@
           const r = src[src.length - 1 - p.dataIndex];
           return `<strong>${r.author}</strong><br/>${fmt(r.posts)} post<br/>source: ${r.source_page}`;
         });
-      if (FB.topHashtags && FB.topHashtags.length) {
-        _horizontalBar('#fb-chart-top-hashtags', FB.topHashtags, 'count', 'hashtag', '#a1a1aa',
-          (p) => `#${p.name}: ${fmt(p.value)}`);
-      } else {
-        document.getElementById('fb-chart-top-hashtags').innerHTML =
-          '<p style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px">Tidak ada hashtag terdeteksi di dataset ini.</p>';
-      }
       const tbody = $('#fb-top-posts-tbody');
       tbody.innerHTML = FB.topPosts.map(v => `
         <tr data-url="${v.url}">
@@ -2199,7 +2186,7 @@
       _timelineBar('#fbc-chart-monthly', months, months.map(k => FBC.monthly[k]), 'Comments');
       _donut('#fbc-chart-length', FBC.lengthDist.filter(d => d.count > 0),
              'count', 'bucket', TT_DONUT);
-      _horizontalBar('#fbc-chart-likes', FBC.likesDist, 'count', 'bucket', '#a1a1aa');
+      _horizontalBar('#fbc-chart-likes', FBC.likesDist.filter(d => d.count > 0), 'count', 'bucket', '#a1a1aa');
       // Threading depth as horizontal bar
       const depth = Object.entries(FBC.meta.threadingDepthDist || {}).map(([k, v]) => ({
         bucket: `Depth ${k}` + (k === '0' ? ' (top-level)' : ' (reply)'),
