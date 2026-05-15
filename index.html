@@ -321,6 +321,8 @@
     <button data-tab="ig-comments">💬 IG Comments</button>
     <button data-tab="twitter">🐦 Twitter</button>
     <button data-tab="tw-comments">💬 TW Replies</button>
+    <button data-tab="facebook">📘 Facebook</button>
+    <button data-tab="fb-comments">💬 FB Comments</button>
   </nav>
   <div class="tab-mobile" role="tablist" aria-label="Pilih tab">
     <label for="tab-select">Tab</label>
@@ -336,6 +338,8 @@
       <option value="ig-comments">💬 IG Comments</option>
       <option value="twitter">🐦 Twitter</option>
       <option value="tw-comments">💬 TW Replies</option>
+      <option value="facebook">📘 Facebook</option>
+      <option value="fb-comments">💬 FB Comments</option>
     </select>
   </div>
 
@@ -759,6 +763,97 @@
       </div>
     </section>
 
+    <!-- Tab 12: Facebook -->
+    <section class="tab-content" id="tab-facebook">
+      <div id="fb-kpi" class="kpi-row" style="margin:0 0 16px"></div>
+
+      <div style="margin:0 0 12px;padding:8px 12px;background:#eff6ff;border-left:3px solid #2563eb;border-radius:4px;font-size:12px;color:var(--text-muted)">
+        <strong>Catatan:</strong> FB keyword-search di-batasi platform. Data
+        diambil dari daftar halaman target via <code>--page-urls-file</code>.
+        Lihat <code>socmed/facebook/pages_*.txt</code>.
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Post per bulan</h3>
+          <p style="font-size:11px;color:var(--text-muted);margin:-4px 0 8px">
+            Garis dashed crimson = rata-rata. Bar amber = 3 bulan tertinggi.
+          </p>
+          <div class="chart chart-tall" id="fb-chart-monthly"></div>
+        </div>
+        <div class="card">
+          <h3>Distribusi engagement (likes+comments)</h3>
+          <div class="chart chart-tall" id="fb-chart-eng"></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:16px">
+        <div class="card">
+          <h3>Top halaman · paling banyak posting</h3>
+          <div class="chart chart-tall" id="fb-chart-top-pages"></div>
+        </div>
+        <div class="card">
+          <h3>🏷️ Top hashtag (kalau ada)</h3>
+          <div class="chart chart-tall" id="fb-chart-top-hashtags"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h3>📘 Top 30 post · likes + comments tertinggi</h3>
+        <div style="overflow-x:auto">
+          <table class="articles" id="fb-top-posts">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Isi</th>
+                <th>Page</th>
+                <th>Source folder</th>
+                <th style="text-align:right">Likes</th>
+                <th style="text-align:right">Comments</th>
+                <th style="text-align:right">Shares</th>
+              </tr>
+            </thead>
+            <tbody id="fb-top-posts-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 13: Facebook Comments (statistics only) -->
+    <section class="tab-content" id="tab-fb-comments">
+      <div id="fbc-kpi" class="kpi-row" style="margin:0 0 16px"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Komentar per bulan</h3>
+          <div class="chart chart-tall" id="fbc-chart-monthly"></div>
+        </div>
+        <div class="card">
+          <h3>Distribusi panjang komentar</h3>
+          <div class="chart chart-tall" id="fbc-chart-length"></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:16px">
+        <div class="card">
+          <h3>Distribusi like per komentar</h3>
+          <div class="chart chart-tall" id="fbc-chart-likes"></div>
+        </div>
+        <div class="card">
+          <h3>Threading depth (nested reply)</h3>
+          <p style="font-size:11px;color:var(--text-muted);margin:-4px 0 8px">
+            Depth 0 = top-level · Depth 1+ = reply ke komentar lain.
+          </p>
+          <div class="chart chart-tall" id="fbc-chart-depth"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h3>Top 20 commenter</h3>
+        <div class="chart chart-tall" id="fbc-chart-top-commenters"></div>
+      </div>
+    </section>
+
     <!-- Tab 5: YouTube Comments (statistics only) -->
     <section class="tab-content" id="tab-yt-comments">
       <div id="ytc-kpi" class="kpi-row" style="margin:0 0 16px"></div>
@@ -900,7 +995,7 @@
     let MANIFEST = null;     // header summary
     let ARTICLES = [];       // populated when articles tab opens
     let OVERVIEW = null;     // groups, monthly, daily, byPortal, topReporters, topTags, topKanal
-    let YT = null, YTC = null, TT = null, TTC = null, IG = null, IGC = null, TW = null, TWC = null;
+    let YT = null, YTC = null, TT = null, TTC = null, IG = null, IGC = null, TW = null, TWC = null, FB = null, FBC = null;
 
     // ====== Helpers ======
     const $ = (sel) => document.querySelector(sel);
@@ -923,9 +1018,9 @@
       $('#generated-at').textContent = `Generated ${m.generatedAt}`;
 
       const grandPosts = (m.totalArticles||0) + (m.totalVideosYT||0) + (m.totalVideosTT||0)
-                         + (m.totalPostsIG||0) + (m.totalTweetsTW||0);
+                         + (m.totalPostsIG||0) + (m.totalTweetsTW||0) + (m.totalPostsFB||0);
       const grandComments = (m.totalCommentsYT||0) + (m.totalCommentsTT||0)
-                            + (m.totalCommentsIG||0) + (m.totalRepliesTW||0);
+                            + (m.totalCommentsIG||0) + (m.totalRepliesTW||0) + (m.totalCommentsFB||0);
 
       $('#kpi-row').innerHTML = `
         <div class="kpi-card"><div class="label">Total konten (gabungan)</div><div class="value">${fmt(grandPosts)}</div></div>
@@ -944,6 +1039,8 @@
         { icon: '💬', name: 'IG cmts',   count: m.totalCommentsIG,  focal: false },
         { icon: '🐦', name: 'Twitter',   count: m.totalTweetsTW,    focal: m.totalTweetsTW > 5000 },
         { icon: '💬', name: 'TW replies',count: m.totalRepliesTW,   focal: false },
+        { icon: '📘', name: 'Facebook',  count: m.totalPostsFB,     focal: false },
+        { icon: '💬', name: 'FB cmts',   count: m.totalCommentsFB,  focal: false },
       ];
       $('#source-badges').innerHTML = sourceData
         .filter(s => s.count > 0)
@@ -961,7 +1058,8 @@
                            youtube: false, 'yt-comments': false,
                            tiktok: false, 'tt-comments': false,
                            instagram: false, 'ig-comments': false,
-                           twitter: false, 'tw-comments': false };
+                           twitter: false, 'tw-comments': false,
+                           facebook: false, 'fb-comments': false };
     async function switchTab(name) {
       document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
       document.querySelectorAll('.tab-content').forEach(el => el.classList.toggle('active', el.id === `tab-${name}`));
@@ -979,6 +1077,8 @@
         if (name === 'ig-comments') await renderInstagramComments();
         if (name === 'twitter') await renderTwitter();
         if (name === 'tw-comments') await renderTwitterComments();
+        if (name === 'facebook') await renderFacebook();
+        if (name === 'fb-comments') await renderFacebookComments();
         tabsRendered[name] = true;
       }
       // Resize charts after tab shown (ECharts needs visible container)
@@ -2014,6 +2114,101 @@
       _horizontalBar('#twc-chart-top-commenters', TWC.topCommenters.slice(0, 20),
         'comments', 'author', '#a1a1aa',
         (p) => `<strong>@${p.name}</strong><br/>${fmt(p.value)} reply`);
+    }
+
+    // ====== Facebook Tab ======
+    async function renderFacebook() {
+      FB = await loadData('facebook');
+      if (!FB) {
+        document.getElementById('tab-facebook').innerHTML =
+          '<div class="card"><h3>Facebook data belum di-generate</h3></div>';
+        return;
+      }
+      const m = FB.meta;
+      $('#fb-kpi').innerHTML = `
+        <div class="kpi-card" style="background:#eff6ff;color:#1a1a1a;border:1px solid #bfdbfe">
+          <div class="label" style="color:#1d4ed8">Total post</div><div class="value">${fmt(m.totalPosts)}</div></div>
+        <div class="kpi-card" style="background:#fff7ed;color:#1a1a1a;border:1px solid #fed7aa">
+          <div class="label" style="color:#c2410c">Halaman discan</div><div class="value">${fmt(m.pagesCount)}</div></div>
+        <div class="kpi-card" style="background:#fefce8;color:#1a1a1a;border:1px solid #fef08a">
+          <div class="label" style="color:#a16207">Total likes</div><div class="value">${fmt(m.totalLikes)}</div></div>
+        <div class="kpi-card" style="background:#f0fdf4;color:#1a1a1a;border:1px solid #bbf7d0">
+          <div class="label" style="color:#15803d">Komentar (API)</div><div class="value">${fmt(m.totalCommentsAPI)}</div></div>
+        <div class="kpi-card" style="background:#fdf2f8;color:#1a1a1a;border:1px solid #fbcfe8">
+          <div class="label" style="color:#be185d">Total shares</div><div class="value">${fmt(m.totalShares)}</div></div>
+        <div class="kpi-card" style="background:#faf5ff;color:#1a1a1a;border:1px solid #e9d5ff">
+          <div class="label" style="color:#7c3aed">Avg likes / post</div><div class="value">${fmt(m.averageLikes)}</div></div>
+      `;
+      const months = Object.keys(FB.monthly).sort();
+      _timelineBar('#fb-chart-monthly', months, months.map(k => FB.monthly[k]), 'Posts');
+      _horizontalBar('#fb-chart-eng', FB.engagementDist, 'count', 'bucket', '#a1a1aa',
+        (p) => `${p.name}: ${fmt(p.value)} post`);
+      _horizontalBar('#fb-chart-top-pages',
+        FB.topPages.map(a => ({...a, label: a.author})),
+        'posts', 'label', '#a1a1aa',
+        (p, src) => {
+          const r = src[src.length - 1 - p.dataIndex];
+          return `<strong>${r.author}</strong><br/>${fmt(r.posts)} post<br/>source: ${r.source_page}`;
+        });
+      if (FB.topHashtags && FB.topHashtags.length) {
+        _horizontalBar('#fb-chart-top-hashtags', FB.topHashtags, 'count', 'hashtag', '#a1a1aa',
+          (p) => `#${p.name}: ${fmt(p.value)}`);
+      } else {
+        document.getElementById('fb-chart-top-hashtags').innerHTML =
+          '<p style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px">Tidak ada hashtag terdeteksi di dataset ini.</p>';
+      }
+      const tbody = $('#fb-top-posts-tbody');
+      tbody.innerHTML = FB.topPosts.map(v => `
+        <tr data-url="${v.url}">
+          <td class="date">${v.timestamp || '—'}</td>
+          <td>${escapeHtml(v.title)}</td>
+          <td>${escapeHtml(v.author)}</td>
+          <td><code style="font-size:10px">${escapeHtml(v.source_page || '')}</code></td>
+          <td class="words">${fmt(v.likes)}</td>
+          <td class="words">${fmt(v.comments_count)}</td>
+          <td class="words">${fmt(v.shares)}</td>
+        </tr>
+      `).join('');
+      tbody.querySelectorAll('tr').forEach(tr => tr.addEventListener('click',
+        () => window.open(tr.dataset.url, '_blank', 'noopener')));
+    }
+
+    async function renderFacebookComments() {
+      FBC = await loadData('fb_comments');
+      if (!FBC) {
+        document.getElementById('tab-fb-comments').innerHTML =
+          '<div class="card"><h3>FB Comments belum di-generate</h3></div>';
+        return;
+      }
+      const m = FBC.meta;
+      $('#fbc-kpi').innerHTML = `
+        <div class="kpi-card" style="background:#eff6ff;color:#1a1a1a;border:1px solid #bfdbfe">
+          <div class="label" style="color:#1d4ed8">Total komentar</div><div class="value">${fmt(m.totalComments)}</div></div>
+        <div class="kpi-card" style="background:#fff7ed;color:#1a1a1a;border:1px solid #fed7aa">
+          <div class="label" style="color:#c2410c">Commenter unik</div><div class="value">${fmt(m.uniqueCommenters)}</div></div>
+        <div class="kpi-card" style="background:#fefce8;color:#1a1a1a;border:1px solid #fef08a">
+          <div class="label" style="color:#a16207">Post w/ komentar</div><div class="value">${fmt(m.postsWithComments)}</div></div>
+        <div class="kpi-card" style="background:#f0fdf4;color:#1a1a1a;border:1px solid #bbf7d0">
+          <div class="label" style="color:#15803d">Total likes</div><div class="value">${fmt(m.totalLikes)}</div></div>
+        <div class="kpi-card" style="background:#eff6ff;color:#1a1a1a;border:1px solid #bfdbfe">
+          <div class="label" style="color:#1d4ed8">Reply ratio</div><div class="value">${m.replyRatio}%</div></div>
+        <div class="kpi-card" style="background:#faf5ff;color:#1a1a1a;border:1px solid #e9d5ff">
+          <div class="label" style="color:#7c3aed">Avg kata / like</div><div class="value">${m.averageWords} · ${m.averageLikes}</div></div>
+      `;
+      const months = Object.keys(FBC.monthly).sort();
+      _timelineBar('#fbc-chart-monthly', months, months.map(k => FBC.monthly[k]), 'Comments');
+      _donut('#fbc-chart-length', FBC.lengthDist.filter(d => d.count > 0),
+             'count', 'bucket', TT_DONUT);
+      _horizontalBar('#fbc-chart-likes', FBC.likesDist, 'count', 'bucket', '#a1a1aa');
+      // Threading depth as horizontal bar
+      const depth = Object.entries(FBC.meta.threadingDepthDist || {}).map(([k, v]) => ({
+        bucket: `Depth ${k}` + (k === '0' ? ' (top-level)' : ' (reply)'),
+        count: v,
+      }));
+      _horizontalBar('#fbc-chart-depth', depth, 'count', 'bucket', '#a1a1aa');
+      _horizontalBar('#fbc-chart-top-commenters', FBC.topCommenters.slice(0, 20),
+        'comments', 'author', '#a1a1aa',
+        (p) => `<strong>${p.name}</strong><br/>${fmt(p.value)} komentar`);
     }
 
     // ====== Boot ======
