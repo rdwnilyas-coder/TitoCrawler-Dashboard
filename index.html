@@ -1254,6 +1254,39 @@
         <div id="chart-ner-bipartite" style="height:600px;background:#fafafa;border:1px solid #e5e7eb;border-radius:6px"></div>
       </div>
 
+      <!-- Event temporal — monthly timeline + lifecycle -->
+      <div class="card" style="margin-top:14px">
+        <h3>📈 Temporal event — timeline + lifecycle</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Mention bulanan top event (canonical) dari news + YouTube + 4 socmed (post-level).
+          Warna sesuai lifecycle class
+          (<span style="color:#16a34a">rising</span> /
+          <span style="color:#ea580c">peaked</span> /
+          <span style="color:#dc2626">fading</span> /
+          <span style="color:#6366f1">steady</span> /
+          <span style="color:#a1a1aa">one-hit</span>).
+          Ribbon bawah = total mention semua top event bulan tsb.
+        </p>
+        <div class="filters" style="margin-bottom:6px">
+          <label style="font-size:12px;color:var(--text-muted)">Tampilkan:</label>
+          <select id="ner-evt-temporal-mode">
+            <option value="top">Top 10 by total mention</option>
+            <option value="fading">Hanya class: fading</option>
+            <option value="peaked">Hanya class: peaked</option>
+            <option value="rising">Hanya class: rising</option>
+            <option value="steady">Hanya class: steady</option>
+          </select>
+          <label style="font-size:12px;color:var(--text-muted);margin-left:12px">
+            <input type="checkbox" id="ner-evt-temporal-log" /> Log scale Y
+          </label>
+          <label style="font-size:12px;color:var(--text-muted);margin-left:12px">
+            <input type="checkbox" id="ner-evt-temporal-stack" /> Stacked area
+          </label>
+        </div>
+        <div id="chart-ner-evt-temporal" style="height:440px"></div>
+        <div id="chart-ner-evt-monthly-total" style="height:120px;margin-top:6px"></div>
+      </div>
+
       <!-- 3. Portal diversity + Cross-platform rank diff -->
       <div class="grid-2" style="margin-top:14px">
         <div class="card">
@@ -2806,6 +2839,7 @@
       renderNERSNA();
       renderNEREventSNA();
       renderNERBipartite();
+      renderNEREventTemporal();
 
       // 1. Canonical clusters
       const canonBody = document.querySelector('#ner-canon-table tbody');
@@ -3399,6 +3433,102 @@
       };
 
       [minwEl, topperEl, topevtEl].forEach(el => {
+        if (el && !el.dataset.bound) {
+          el.dataset.bound = '1';
+          el.addEventListener('change', renderInner);
+        }
+      });
+      renderInner();
+    }
+
+    // ====== NER Event temporal (monthly timeline per event + ribbon total) ======
+    function renderNEREventTemporal() {
+      if (!NER_INSIGHTS) return;
+      const et = NER_INSIGHTS.eventTemporal || {};
+      const events = et.events || [];
+      const elMain = document.getElementById('chart-ner-evt-temporal');
+      const elTotal = document.getElementById('chart-ner-evt-monthly-total');
+      if (!elMain) return;
+      if (!events.length) {
+        elMain.innerHTML = '<div style="padding:60px;text-align:center;color:#9ca3af">Tidak ada data event temporal</div>';
+        return;
+      }
+
+      const modeEl  = document.getElementById('ner-evt-temporal-mode');
+      const logEl   = document.getElementById('ner-evt-temporal-log');
+      const stackEl = document.getElementById('ner-evt-temporal-stack');
+
+      const renderInner = () => {
+        const mode    = modeEl  ? modeEl.value  : 'top';
+        const useLog  = logEl   ? logEl.checked : false;
+        const stacked = stackEl ? stackEl.checked : false;
+        let pool;
+        if (mode === 'top') {
+          pool = [...events].sort((a, b) => b.totalMentions - a.totalMentions).slice(0, 10);
+        } else {
+          pool = events.filter(x => x.class === mode).slice(0, 12);
+          if (!pool.length) pool = [...events].sort((a, b) => b.totalMentions - a.totalMentions).slice(0, 10);
+        }
+        // Build months/series
+        const monthSet = new Set();
+        pool.forEach(e => (e.timeline || []).forEach(t => monthSet.add(t.month)));
+        const months = Array.from(monthSet).sort();
+        const series = pool.map(e => {
+          const tl = Object.fromEntries((e.timeline || []).map(t => [t.month, t.count]));
+          const data = months.map(m => tl[m] || 0);
+          const color = LIFECYCLE_COLORS[e.class] || '#6b7280';
+          return {
+            name: `${e.event} (${e.class})`,
+            type: 'line', smooth: true, data,
+            stack: stacked ? 'evt' : undefined,
+            areaStyle: stacked ? { opacity: 0.45 } : undefined,
+            symbolSize: 4,
+            lineStyle: { color, width: 2 }, itemStyle: { color },
+            emphasis: { focus: 'series' },
+          };
+        });
+
+        const chart = echarts.init(elMain);
+        chart.setOption({
+          tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+          legend: { type: 'scroll', top: 0, textStyle: { fontSize: 11 } },
+          grid: { left: 8, right: 24, top: 50, bottom: 40, containLabel: true },
+          xAxis: { type: 'category', data: months, axisLabel: { rotate: 45, fontSize: 10 } },
+          yAxis: {
+            type: useLog ? 'log' : 'value',
+            name: 'mention',
+            min: useLog ? 1 : 0,
+            axisLabel: { fontSize: 10 }
+          },
+          dataZoom: [{ type: 'inside' }, { type: 'slider', height: 18, bottom: 6 }],
+          series,
+        }, true);
+        window.addEventListener('resize', () => chart.resize());
+
+        // Ribbon: monthly total (across ALL top events tracked, not filtered pool)
+        const monthlyTotal = et.monthlyTotal || {};
+        const totalMonths = Object.keys(monthlyTotal).sort();
+        const totalData = totalMonths.map(m => monthlyTotal[m]);
+        if (elTotal) {
+          const c2 = echarts.init(elTotal);
+          c2.setOption({
+            tooltip: { trigger: 'axis' },
+            grid: { left: 8, right: 24, top: 12, bottom: 20, containLabel: true },
+            xAxis: { type: 'category', data: totalMonths, axisLabel: { fontSize: 9, rotate: 45 } },
+            yAxis: { type: 'value', show: false },
+            series: [{
+              name: 'total event mention',
+              type: 'bar',
+              data: totalData,
+              itemStyle: { color: '#cbd5e1' },
+              emphasis: { itemStyle: { color: '#475569' } },
+            }],
+          });
+          window.addEventListener('resize', () => c2.resize());
+        }
+      };
+
+      [modeEl, logEl, stackEl].forEach(el => {
         if (el && !el.dataset.bound) {
           el.dataset.bound = '1';
           el.addEventListener('change', renderInner);
