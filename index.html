@@ -317,6 +317,7 @@
     <button data-tab="topic">🧩 Topic Modelling</button>
     <button data-tab="sna-socmed">📡 SNA Sosmed</button>
     <button data-tab="sentiment">💚💛💔 Sentiment</button>
+    <button data-tab="bot-coord">🤖 Bot &amp; Coordination</button>
     <button data-tab="youtube">🎥 YouTube</button>
     <button data-tab="yt-comments">💬 YT Comments</button>
     <button data-tab="tiktok">🎵 TikTok</button>
@@ -1679,6 +1680,7 @@
         </div>
       </div>
 
+      <!-- end of sentiment cards continue -->
       <div class="grid-2" style="margin-top:14px">
         <div class="card">
           <h3>🔴 Top negative (most-criticized targets)</h3>
@@ -1694,6 +1696,65 @@
           </p>
           <div class="chart chart-tall" id="chart-sentiment-pos"></div>
         </div>
+      </div>
+    </section>
+
+    <!-- Tab: Bot & Coordination -->
+    <section class="tab-content" id="tab-bot-coord">
+      <div class="card" style="margin-bottom:14px">
+        <h3 id="botc-title">🤖 Bot &amp; Coordinated Activity Detection</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Pure Python heuristic — tanpa labeled training data. Signals: <em>template repetition</em>
+          (akun posting konten boilerplate berulang), <em>burst</em> (≥3 posts dalam 5 menit),
+          <em>timing regularity</em> (interval antar posts terlalu beraturan), <em>hashtag/mention density</em>.
+          Composite <code>bot_score</code> ∈ [0,1], <strong>flag threshold 0.55</strong>.
+          <em>Caveat</em>: tinggi ≠ pasti bot — bisa juga news-aggregator akun resmi atau fan-account aktif. Verifikasi manual.
+        </p>
+        <div id="botc-kpi-row" class="kpi-row" style="margin-top:10px"></div>
+      </div>
+
+      <div class="filters" style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text-muted)"><strong>Platform:</strong></label>
+        <select id="botc-source">
+          <option value="youtube" selected>🎥 YouTube (5,970 active accounts)</option>
+          <option value="twitter">🐦 Twitter (737 active)</option>
+          <option value="tiktok">🎵 TikTok (172 active)</option>
+        </select>
+        <label style="font-size:12px;color:var(--text-muted);margin-left:14px">Min bot_score:</label>
+        <select id="botc-minscore">
+          <option value="0.3">0.30 (loose)</option>
+          <option value="0.45" selected>0.45 (medium)</option>
+          <option value="0.55">0.55 (strict, flag)</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <h3>📋 Top suspect bot accounts</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Akun dengan bot_score tertinggi di platform aktif. Signal columns: <strong>template</strong> = berapa fraksi konten akun yang ≥0.85 jaccard dengan konten lain miliknya (paste-and-repeat),
+          <strong>rep</strong> = avg pairwise similarity konten sendiri,
+          <strong>burst</strong> = posting ≥3 dalam 5-menit window (relative to total),
+          <strong>reg</strong> = timing regularity (1.0 = sangat berkala/bot-like).
+        </p>
+        <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
+          <table class="articles" id="botc-table">
+            <thead><tr>
+              <th>#</th><th>Account</th><th>n posts</th><th>bot_score</th>
+              <th>template</th><th>rep</th><th>burst</th><th>reg</th>
+              <th>reply%</th><th>#tags/100c</th><th>@/100c</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h3>🌊 Coordinated swarms — content amplification waves</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          ≥5 akun unik posting konten serupa (Jaccard ≥0.50) dalam window 5-menit. Indicator untuk
+          <em>news amplification campaign</em> atau <em>coordinated push</em>.
+        </p>
+        <div id="botc-swarms"></div>
       </div>
     </section>
   </main>
@@ -1798,7 +1859,7 @@
 
     // ====== Tab navigation ======
     const tabsRendered = { overview: false, reporters: false, articles: false,
-                           ner: false, topic: false, 'sna-socmed': false, sentiment: false,
+                           ner: false, topic: false, 'sna-socmed': false, sentiment: false, 'bot-coord': false,
                            youtube: false, 'yt-comments': false,
                            tiktok: false, 'tt-comments': false,
                            instagram: false, 'ig-comments': false,
@@ -1827,6 +1888,7 @@
         if (name === 'topic') await renderTopic();
         if (name === 'sna-socmed') await renderSNASocmed();
         if (name === 'sentiment') await renderSentiment();
+        if (name === 'bot-coord') await renderBotCoord();
         tabsRendered[name] = true;
       }
       // Resize charts after tab shown (ECharts needs visible container)
@@ -4747,6 +4809,100 @@
       };
       renderBar('chart-sentiment-neg', filtered, SENTIMENT_COLORS.negative, 'neg_pct');
       renderBar('chart-sentiment-pos', filtered, SENTIMENT_COLORS.positive, 'pos_pct');
+    }
+
+    // ====== Bot & Coordination ======
+    let BOT_DATA = null;
+    const BOTC_STATE = { source: 'youtube', minscore: 0.45 };
+
+    async function renderBotCoord() {
+      BOT_DATA = await loadData('bot_coordination');
+      if (!BOT_DATA || !BOT_DATA.platforms) {
+        document.getElementById('tab-bot-coord').innerHTML =
+          '<div class="card"><h3>Bot data belum di-generate</h3>' +
+          '<p>Run <code>python analysis/code/analyze_bot_coordination.py</code></p></div>';
+        return;
+      }
+      const sel = document.getElementById('botc-source');
+      const ms = document.getElementById('botc-minscore');
+      if (sel && !sel.dataset.bound) { sel.dataset.bound='1'; sel.addEventListener('change', () => renderBotCoordSource(sel.value)); }
+      if (ms && !ms.dataset.bound) { ms.dataset.bound='1'; ms.addEventListener('change', () => { BOTC_STATE.minscore = parseFloat(ms.value); renderBotCoordTable(); }); }
+      renderBotCoordSource(sel ? sel.value : 'youtube');
+    }
+
+    function renderBotCoordSource(source) {
+      const p = BOT_DATA.platforms[source];
+      if (!p) return;
+      BOTC_STATE.source = source;
+      const m = p.meta;
+      const labels = { youtube: '🎥 YouTube', twitter: '🐦 Twitter', tiktok: '🎵 TikTok' };
+      document.getElementById('botc-title').textContent =
+        `🤖 Bot & Coordination — ${labels[source] || source}`;
+      const kpi = [
+        ['Platform', labels[source] || source],
+        ['Total records', fmt(m.total_records)],
+        ['Unique authors', fmt(m.unique_authors)],
+        ['Active (≥5 posts)', fmt(m.active_authors_analyzed)],
+        ['Flagged (≥0.55)', `<span style="color:#dc2626">${fmt(m.flagged_bot_count)}</span>`],
+        ['Swarms detected', `<span style="color:${m.swarms_detected>0?'#dc2626':'#9ca3af'}">${m.swarms_detected}</span>`],
+      ].map(([k,v]) => `<div class="kpi"><div class="kpi-label">${k}</div><div class="kpi-value">${v}</div></div>`).join('');
+      document.getElementById('botc-kpi-row').innerHTML = kpi;
+      renderBotCoordTable();
+      renderBotCoordSwarms();
+    }
+
+    function renderBotCoordTable() {
+      const p = BOT_DATA.platforms[BOTC_STATE.source];
+      const min = BOTC_STATE.minscore;
+      const accounts = (p.accounts || []).filter(a => a.bot_score >= min).slice(0, 80);
+      const tbody = document.querySelector('#botc-table tbody');
+      if (!accounts.length) {
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:#9ca3af">Tidak ada akun dengan bot_score >= ${min}</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = accounts.map((a, i) => {
+        const sevColor = a.bot_score >= 0.7 ? '#dc2626' : (a.bot_score >= 0.55 ? '#ea580c' : '#facc15');
+        return `<tr>
+          <td>${i + 1}</td>
+          <td style="font-family:monospace;font-size:11px"><strong>${a.author}</strong></td>
+          <td style="text-align:right">${a.activity}</td>
+          <td style="text-align:right;color:${sevColor};font-weight:bold">${a.bot_score.toFixed(2)}</td>
+          <td style="text-align:right">${a.template_score.toFixed(2)}</td>
+          <td style="text-align:right">${a.content_repetition.toFixed(2)}</td>
+          <td style="text-align:right">${a.burst_score.toFixed(2)}</td>
+          <td style="text-align:right">${a.timing_regularity.toFixed(2)}</td>
+          <td style="text-align:right;color:#6b7280">${(a.reply_ratio*100).toFixed(0)}%</td>
+          <td style="text-align:right;color:#6b7280">${a.hashtag_density.toFixed(1)}</td>
+          <td style="text-align:right;color:#6b7280">${a.mention_density.toFixed(1)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderBotCoordSwarms() {
+      const p = BOT_DATA.platforms[BOTC_STATE.source];
+      const swarms = p.swarms || [];
+      const el = document.getElementById('botc-swarms');
+      if (!swarms.length) {
+        el.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af">Tidak ada swarm terdeteksi pada platform ini (threshold: ≥5 akun, similarity ≥0.50, window 5 menit)</div>';
+        return;
+      }
+      el.innerHTML = swarms.map((s, i) => `
+        <div style="border:1px solid #e5e7eb;border-left:4px solid #dc2626;border-radius:6px;padding:10px 14px;margin-bottom:8px;background:#fef2f2">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <strong style="color:#dc2626">Swarm #${i + 1}</strong>
+            <span style="font-size:11px;color:#9ca3af">${s.start_ts} UTC</span>
+          </div>
+          <div style="font-size:12px;color:#374151;margin-bottom:6px">
+            <strong>${s.n_unique_authors}</strong> unique authors posted <strong>${s.n_posts}</strong> similar messages in 5-min window
+          </div>
+          <div style="font-size:11px;color:#1f2937;background:#fff;padding:6px 8px;border-radius:3px;margin-bottom:6px;font-style:italic">
+            "${s.content_sample}"
+          </div>
+          <div style="font-size:10px;color:#6b7280">
+            Sample authors: ${s.authors_sample.slice(0,8).join(', ')}${s.authors_sample.length>8?'...':''}
+          </div>
+        </div>
+      `).join('');
     }
 
     // ====== Boot ======
