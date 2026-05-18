@@ -1061,6 +1061,131 @@
           </div>
         </div>
       </div>
+
+      <!-- ============================================================ -->
+      <!-- Advanced insights (analyze_ner_insights.py) — 8 analyses     -->
+      <!-- ============================================================ -->
+      <div class="card" style="margin-top:24px;background:#fef3c7;border:1px solid #fcd34d">
+        <h3 style="color:#92400e">🔬 Advanced NER Insights</h3>
+        <p style="font-size:12px;color:#92400e;margin:-4px 0 0">
+          Analisis lanjutan dari hasil NER — semuanya cross-source (tidak filter by source).
+        </p>
+      </div>
+
+      <!-- 1. Canonical entity clusters -->
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <h3>🧩 Canonical entity clusters</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Fuzzy clustering top PER → kelompokkan varian nama jadi 1 canonical
+            (e.g. "tito" + "tito karnavian" + "muhammad tito karnavian" = 1 orang).
+          </p>
+          <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+            <table class="articles" id="ner-canon-table">
+              <thead><tr><th>Canonical</th><th>Total</th><th>Variants</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h3>📈 Mention spikes (rolling z-score)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Bulan dimana entitas X melonjak >2σ dari baseline 3 bulan sebelumnya.
+            Indikator event / narrative break.
+          </p>
+          <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+            <table class="articles" id="ner-spikes-table">
+              <thead><tr><th>Entity</th><th>Source</th><th>Bulan</th><th style="text-align:right">Count</th><th style="text-align:right">Baseline</th><th style="text-align:right">z-score</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Lifecycle + Network communities -->
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <h3>🌱 Entity lifecycle</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Klasifikasi: <strong style="color:#16a34a">rising</strong> (sedang naik),
+            <strong style="color:#ea580c">peaked</strong> (sudah puncak),
+            <strong style="color:#dc2626">fading</strong> (turun),
+            <strong style="color:#6366f1">steady</strong> (stabil),
+            <strong style="color:#a1a1aa">one-hit</strong> (sekali muncul).
+          </p>
+          <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+            <table class="articles" id="ner-lifecycle-table">
+              <thead><tr><th>Entity</th><th>Class</th><th>Peak</th><th>Recent</th><th style="text-align:right">Total</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🔗 Co-occurrence communities (Louvain)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Network graph PER (edge weight = co-occurrence count). Louvain community
+            detection menemukan kelompok-kelompok tokoh yang sering disebut bareng.
+          </p>
+          <div id="ner-communities" style="max-height:380px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- 3. Portal diversity + Cross-platform rank diff -->
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <h3>📊 Portal diversity (Shannon entropy)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Coverage entropy per portal. Tinggi = topik luas (banyak tokoh). Rendah = fokus ke 1-2 tokoh saja.
+          </p>
+          <div class="chart chart-tall" id="chart-ner-diversity"></div>
+        </div>
+        <div class="card">
+          <h3>⚖️ Cross-platform rank divergence</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Tokoh dengan rank distance terbesar antar platform — sinyal narasi berbeda.
+            Rank None = entitas tidak masuk top 50 di platform itu.
+          </p>
+          <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+            <table class="articles" id="ner-pdiff-table">
+              <thead><tr><th>Entity</th><th>Range</th><th>News</th><th>YT</th><th>TW</th><th>TT</th><th>IG</th><th>FB</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Geographic + Policy -->
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <h3>🗺️ Geographic — GPE/LOC per provinsi</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Agregat GPE + LOC entities di-map ke provinsi. Indikator focus regional.
+          </p>
+          <div class="chart chart-tall" id="chart-ner-geo"></div>
+        </div>
+        <div class="card">
+          <h3>📜 Policy & Money (LAW + MON)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            UU/Pasal/regulasi paling sering disebut + anggaran/biaya yang ter-extract.
+          </p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="overflow-y:auto;max-height:380px">
+              <h4 style="font-size:13px;color:#374151;margin:6px 0">Top LAW</h4>
+              <table class="articles" id="ner-law-table">
+                <thead><tr><th>Text</th><th style="text-align:right">Count</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div style="overflow-y:auto;max-height:380px">
+              <h4 style="font-size:13px;color:#374151;margin:6px 0">Top MON</h4>
+              <table class="articles" id="ner-mon-table">
+                <thead><tr><th>Text</th><th style="text-align:right">Count</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -2326,8 +2451,15 @@
       tiktok: '#000000', instagram: '#a855f7', facebook: '#1d4ed8'
     };
 
+    let NER_INSIGHTS = null;
+    const LIFECYCLE_COLORS = {
+      rising: '#16a34a', peaked: '#ea580c', fading: '#dc2626',
+      steady: '#6366f1', 'one-hit': '#a1a1aa', transient: '#9ca3af'
+    };
+
     async function renderNER() {
       NER = await loadData('ner_resume');
+      NER_INSIGHTS = await loadData('ner_insights');
       if (!NER) {
         document.getElementById('tab-ner').innerHTML =
           '<div class="card"><h3>NER resume belum di-generate</h3><p>Run <code>python analysis/code/build_ner_resume.py</code></p></div>';
@@ -2535,6 +2667,140 @@
         const persons = p.topPersons.map(x => `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;background:#f3f4f6;border-radius:4px;font-size:11px">${x.text} <strong>${fmt(x.count)}</strong></span>`).join(' ');
         return `<tr><td><strong>${p.portal}</strong></td><td>${persons}</td></tr>`;
       }).join('');
+
+      // ====== Advanced insights ======
+      renderNERInsights();
+    }
+
+    function renderNERInsights() {
+      if (!NER_INSIGHTS) return;
+      const I = NER_INSIGHTS;
+
+      // 1. Canonical clusters
+      const canonBody = document.querySelector('#ner-canon-table tbody');
+      canonBody.innerHTML = (I.canonical.clusters || []).map(c => {
+        const variants = c.variants.map(v => `<span style="display:inline-block;margin:1px 3px 1px 0;padding:1px 6px;background:#f3f4f6;border-radius:4px;font-size:10px">${v}</span>`).join('');
+        return `<tr><td><strong>${c.canonical}</strong></td><td style="text-align:right">${fmt(c.totalCount)}</td><td>${variants}</td></tr>`;
+      }).join('');
+
+      // 2. Spikes
+      const spikesBody = document.querySelector('#ner-spikes-table tbody');
+      const sevColor = { high: '#dc2626', medium: '#ea580c', low: '#facc15' };
+      spikesBody.innerHTML = (I.spikes || []).slice(0, 30).map(s => `
+        <tr>
+          <td><strong>${s.entity}</strong></td>
+          <td style="font-size:11px">${s.source}</td>
+          <td>${s.month}</td>
+          <td style="text-align:right">${fmt(s.count)}</td>
+          <td style="text-align:right;color:#6b7280">${s.baseline}</td>
+          <td style="text-align:right;color:${sevColor[s.severity] || '#6b7280'};font-weight:bold">${s.zScore}</td>
+        </tr>
+      `).join('');
+
+      // 3. Lifecycle
+      const lcBody = document.querySelector('#ner-lifecycle-table tbody');
+      lcBody.innerHTML = (I.lifecycle || []).map(l => {
+        const cColor = LIFECYCLE_COLORS[l.class] || '#6b7280';
+        return `<tr>
+          <td><strong>${l.entity}</strong></td>
+          <td><span style="padding:1px 6px;background:${cColor};color:white;border-radius:4px;font-size:11px">${l.class}</span></td>
+          <td style="font-size:11px">${l.peakMonth || '—'} (${fmt(l.peakCount)})</td>
+          <td style="font-size:11px">${l.recentAvg || '—'}</td>
+          <td style="text-align:right">${fmt(l.totalMentions)}</td>
+        </tr>`;
+      }).join('');
+
+      // 4. Network communities
+      const commEl = document.getElementById('ner-communities');
+      const commPalette = ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b'];
+      commEl.innerHTML = (I.network.communities || []).map((c, i) => {
+        const color = commPalette[i % commPalette.length];
+        const members = c.members.slice(0, 12).map(m => `<span style="display:inline-block;margin:2px;padding:2px 8px;background:${color};color:white;border-radius:4px;font-size:11px">${m}</span>`).join('');
+        const more = c.members.length > 12 ? ` <span style="font-size:11px;color:#6b7280">+${c.members.length - 12} more</span>` : '';
+        return `<div style="margin-bottom:12px;padding:8px;background:#f9fafb;border-left:3px solid ${color};border-radius:4px">
+          <div style="font-size:12px;color:#374151;margin-bottom:4px"><strong>Community ${c.id}</strong> · ${c.size} entitas · weight ${fmt(c.totalWeight)}</div>
+          <div>${members}${more}</div>
+        </div>`;
+      }).join('');
+
+      // 5. Portal diversity — horizontal bar
+      const divData = (I.diversity || []).slice(0, 21);
+      const divEl = document.getElementById('chart-ner-diversity');
+      if (divData.length) {
+        const cD = echarts.init(divEl);
+        cD.setOption({
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: (p) => {
+              const d = divData.find(x => x.portal === p[0].name);
+              return `<strong>${d.portal}</strong><br/>Shannon H = ${d.shannonH}<br/>Norm H = ${d.normalizedH}<br/>Unique PER = ${d.uniquePer}<br/>Dominant: ${d.dominantEntity} (${(d.dominantShare*100).toFixed(0)}%)`;
+            }
+          },
+          grid: { left: 8, right: 32, top: 8, bottom: 8, containLabel: true },
+          xAxis: { type: 'value', max: 1, name: 'H normalized' },
+          yAxis: { type: 'category', data: divData.map(d => d.portal).reverse() },
+          series: [{
+            type: 'bar', data: divData.map(d => d.normalizedH).reverse(),
+            itemStyle: { color: (p) => {
+              const v = p.value;
+              return v >= 0.7 ? '#16a34a' : (v >= 0.5 ? '#f59e0b' : '#dc2626');
+            }},
+            label: { show: true, position: 'right', fontSize: 10, formatter: (p) => p.value.toFixed(3) }
+          }]
+        });
+        window.addEventListener('resize', () => cD.resize());
+      }
+
+      // 6. Geographic — horizontal bar of provinces
+      const geoData = (I.geo.byProvince || []).slice(0, 20);
+      const geoEl = document.getElementById('chart-ner-geo');
+      if (geoData.length) {
+        const cG = echarts.init(geoEl);
+        cG.setOption({
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: (p) => `<strong>${p[0].name}</strong><br/>${fmt(p[0].value)} mention`
+          },
+          grid: { left: 8, right: 32, top: 8, bottom: 8, containLabel: true },
+          xAxis: { type: 'value' },
+          yAxis: { type: 'category', data: geoData.map(d => d.province).reverse() },
+          series: [{
+            type: 'bar',
+            data: geoData.map((d, i) => ({
+              value: d.count,
+              itemStyle: { color: i === 0 ? '#dc2626' : (i < 3 ? '#f59e0b' : '#a1a1aa') }
+            })).reverse(),
+            label: { show: true, position: 'right', fontSize: 10, formatter: (p) => fmt(p.value) }
+          }]
+        });
+        window.addEventListener('resize', () => cG.resize());
+      }
+
+      // 7. Cross-platform rank diff
+      const pdBody = document.querySelector('#ner-pdiff-table tbody');
+      const platforms = (I.platformDiff.platforms || []);
+      const platformAbbr = { news: 'news', youtube: 'YT', twitter: 'TW', tiktok: 'TT', instagram: 'IG', facebook: 'FB' };
+      pdBody.innerHTML = (I.platformDiff.rows || []).slice(0, 25).map(r => {
+        const cells = ['news', 'youtube', 'twitter', 'tiktok', 'instagram', 'facebook']
+          .map(p => {
+            const v = r.ranks[p];
+            const display = v === null || v === undefined ? '<span style="color:#cbd5e1">—</span>' : v;
+            return `<td style="text-align:center;font-size:11px">${display}</td>`;
+          }).join('');
+        return `<tr>
+          <td><strong>${r.entity}</strong></td>
+          <td style="text-align:center;color:#dc2626;font-weight:bold">${r.rankRange}</td>
+          ${cells}
+        </tr>`;
+      }).join('');
+
+      // 8. Policy LAW + MON
+      const lawBody = document.querySelector('#ner-law-table tbody');
+      lawBody.innerHTML = (I.policy.topLaw || []).slice(0, 15).map(x =>
+        `<tr><td style="font-size:12px">${x.text}</td><td style="text-align:right">${fmt(x.count)}</td></tr>`
+      ).join('');
+      const monBody = document.querySelector('#ner-mon-table tbody');
+      monBody.innerHTML = (I.policy.topMon || []).slice(0, 15).map(x =>
+        `<tr><td style="font-size:12px">${x.text}</td><td style="text-align:right">${fmt(x.count)}</td></tr>`
+      ).join('');
     }
 
     // ====== Boot ======
