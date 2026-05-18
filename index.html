@@ -313,22 +313,17 @@
     <button class="active" data-tab="overview">📰 Portal</button>
     <button data-tab="reporters">👥 Reporters &amp; Tags</button>
     <button data-tab="articles">📄 Articles</button>
-    <button data-tab="ner-news">🏷️ News NER</button>
+    <button data-tab="ner">🏷️ Analisis NER</button>
     <button data-tab="youtube">🎥 YouTube</button>
     <button data-tab="yt-comments">💬 YT Comments</button>
-    <button data-tab="ner-yt">🏷️ YT NER</button>
     <button data-tab="tiktok">🎵 TikTok</button>
     <button data-tab="tt-comments">💬 TT Comments</button>
-    <button data-tab="ner-tt">🏷️ TT NER</button>
     <button data-tab="instagram">📷 Instagram</button>
     <button data-tab="ig-comments">💬 IG Comments</button>
-    <button data-tab="ner-ig">🏷️ IG NER</button>
     <button data-tab="twitter">🐦 Twitter</button>
     <button data-tab="tw-comments">💬 TW Replies</button>
-    <button data-tab="ner-tw">🏷️ TW NER</button>
     <button data-tab="facebook">📘 Facebook</button>
     <button data-tab="fb-comments">💬 FB Comments</button>
-    <button data-tab="ner-fb">🏷️ FB NER</button>
   </nav>
   <div class="tab-mobile" role="tablist" aria-label="Pilih tab">
     <label for="tab-select">Tab</label>
@@ -336,22 +331,17 @@
       <option value="overview">📰 Portal</option>
       <option value="reporters">👥 Reporters &amp; Tags</option>
       <option value="articles">📄 Articles</option>
-      <option value="ner-news">🏷️ News NER</option>
+      <option value="ner">🏷️ Analisis NER</option>
       <option value="youtube">🎥 YouTube</option>
       <option value="yt-comments">💬 YT Comments</option>
-      <option value="ner-yt">🏷️ YT NER</option>
       <option value="tiktok">🎵 TikTok</option>
       <option value="tt-comments">💬 TT Comments</option>
-      <option value="ner-tt">🏷️ TT NER</option>
       <option value="instagram">📷 Instagram</option>
       <option value="ig-comments">💬 IG Comments</option>
-      <option value="ner-ig">🏷️ IG NER</option>
       <option value="twitter">🐦 Twitter</option>
       <option value="tw-comments">💬 TW Replies</option>
-      <option value="ner-tw">🏷️ TW NER</option>
       <option value="facebook">📘 Facebook</option>
       <option value="fb-comments">💬 FB Comments</option>
-      <option value="ner-fb">🏷️ FB NER</option>
     </select>
   </div>
 
@@ -960,21 +950,22 @@
       <div class="pagination" id="pagination"></div>
     </section>
 
-    <!-- Tab: NER (Named Entity Recognition) — shared by 6 per-source tabs + source filter -->
+    <!-- Tab: Analisis NER (Named Entity Recognition) — single tab, source via switcher -->
     <section class="tab-content" id="tab-ner">
       <div class="card" style="margin-bottom:14px">
-        <h3 id="ner-title">🏷️ Entitas hasil NER</h3>
+        <h3 id="ner-title">🏷️ Analisis NER — semua sumber (gabungan)</h3>
         <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
           Model: <code>cahya/bert-base-indonesian-NER</code>. Filter: entitas ≥3 karakter,
           type NOR di-hide di chart (tetap ada di stat). Tipe ditampilkan: PER, ORG, GPE, LOC, LAW, MON, EVT.
+          Ganti sumber via dropdown di bawah untuk lihat per platform.
         </p>
         <div id="ner-kpi-row" class="kpi-row" style="margin-top:10px"></div>
       </div>
 
       <div class="filters" style="margin-bottom:10px">
-        <label style="font-size:12px;color:var(--text-muted)">Switch sumber:</label>
+        <label style="font-size:12px;color:var(--text-muted)"><strong>Switcher sumber:</strong></label>
         <select id="ner-source-filter">
-          <option value="all">Semua sumber (gabungan)</option>
+          <option value="all">🌐 Semua sumber (gabungan)</option>
           <option value="news">📰 News (21 portal)</option>
           <option value="youtube">🎥 YouTube</option>
           <option value="twitter">🐦 Twitter</option>
@@ -982,9 +973,6 @@
           <option value="instagram">📷 Instagram</option>
           <option value="facebook">📘 Facebook</option>
         </select>
-        <span style="font-size:12px;color:var(--text-muted)">
-          Tip: navigasi tab juga otomatis set sumber, dropdown untuk switch cepat.
-        </span>
       </div>
 
       <div class="grid-2">
@@ -1176,33 +1164,15 @@
 
     // ====== Tab navigation ======
     const tabsRendered = { overview: false, reporters: false, articles: false,
-                           'ner-news': false, 'ner-yt': false, 'ner-tt': false,
-                           'ner-ig': false, 'ner-tw': false, 'ner-fb': false,
+                           ner: false,
                            youtube: false, 'yt-comments': false,
                            tiktok: false, 'tt-comments': false,
                            instagram: false, 'ig-comments': false,
                            twitter: false, 'tw-comments': false,
                            facebook: false, 'fb-comments': false };
-    const NER_TAB_SOURCE = {
-      'ner-news': 'news', 'ner-yt': 'youtube', 'ner-tt': 'tiktok',
-      'ner-ig': 'instagram', 'ner-tw': 'twitter', 'ner-fb': 'facebook'
-    };
-    const NER_TAB_TITLE = {
-      'ner-news': '📰 News NER — entitas dari 21 portal berita',
-      'ner-yt':   '🎥 YouTube NER — entitas dari video & komentar',
-      'ner-tt':   '🎵 TikTok NER — entitas dari post & komentar',
-      'ner-ig':   '📷 Instagram NER — entitas dari post & komentar',
-      'ner-tw':   '🐦 Twitter NER — entitas dari tweet & replies',
-      'ner-fb':   '📘 Facebook NER — entitas dari post & komentar'
-    };
     async function switchTab(name) {
       document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-      // NER family: all ner-* tabs share the single #tab-ner section
-      const isNerFamily = name in NER_TAB_SOURCE;
-      document.querySelectorAll('.tab-content').forEach(el => {
-        const wantId = isNerFamily ? 'tab-ner' : `tab-${name}`;
-        el.classList.toggle('active', el.id === wantId);
-      });
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.toggle('active', el.id === `tab-${name}`));
       const sel = document.getElementById('tab-select');
       if (sel && sel.value !== name) sel.value = name;
       if (!tabsRendered[name]) {
@@ -1219,11 +1189,8 @@
         if (name === 'tw-comments') await renderTwitterComments();
         if (name === 'facebook') await renderFacebook();
         if (name === 'fb-comments') await renderFacebookComments();
-        if (isNerFamily) await renderNERFor(name);
+        if (name === 'ner') await renderNER();
         tabsRendered[name] = true;
-      } else if (isNerFamily) {
-        // Already rendered — just retarget source + redraw
-        await renderNERFor(name);
       }
       // Resize charts after tab shown (ECharts needs visible container)
       setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
@@ -2373,40 +2340,22 @@
         sel.addEventListener('change', (e) => {
           NER_SOURCE = e.target.value;
           const titleEl = document.getElementById('ner-title');
-          if (titleEl) {
-            const map = {
-              all: '🏷️ NER — semua sumber (gabungan)',
-              news: NER_TAB_TITLE['ner-news'],
-              youtube: NER_TAB_TITLE['ner-yt'],
-              twitter: NER_TAB_TITLE['ner-tw'],
-              tiktok: NER_TAB_TITLE['ner-tt'],
-              instagram: NER_TAB_TITLE['ner-ig'],
-              facebook: NER_TAB_TITLE['ner-fb'],
-            };
-            titleEl.textContent = map[NER_SOURCE] || '🏷️ NER';
-          }
+          if (titleEl) titleEl.textContent = NER_TITLE_MAP[NER_SOURCE] || '🏷️ Analisis NER';
           renderNERCharts();
         });
       }
       renderNERCharts();
     }
 
-    async function renderNERFor(tabName) {
-      // Used by per-source NER tabs (ner-news / ner-yt / ner-tt / ner-ig / ner-tw / ner-fb).
-      // Sets source filter + title, then delegates to renderNER (first time) or renderNERCharts.
-      const src = NER_TAB_SOURCE[tabName] || 'all';
-      NER_SOURCE = src;
-      const titleEl = document.getElementById('ner-title');
-      if (titleEl) titleEl.textContent = NER_TAB_TITLE[tabName] || '🏷️ NER';
-      // Sync dropdown reflectively
-      const sel = document.getElementById('ner-source-filter');
-      if (sel) sel.value = src;
-      if (!NER) {
-        await renderNER();
-      } else {
-        renderNERCharts();
-      }
-    }
+    const NER_TITLE_MAP = {
+      all: '🏷️ Analisis NER — semua sumber (gabungan)',
+      news: '📰 Analisis NER — News (21 portal berita)',
+      youtube: '🎥 Analisis NER — YouTube (video & komentar)',
+      twitter: '🐦 Analisis NER — Twitter (tweet & replies)',
+      tiktok: '🎵 Analisis NER — TikTok (post & komentar)',
+      instagram: '📷 Analisis NER — Instagram (post & komentar)',
+      facebook: '📘 Analisis NER — Facebook (post & komentar)',
+    };
 
     function _nerFilterCount(entry) {
       // entry: {text, count, perSource: {news:..., youtube:..., ...}}
