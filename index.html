@@ -1414,6 +1414,123 @@
           </table>
         </div>
       </div>
+
+      <!-- ===== ADVANCED ANALYSES (8 cards) ===== -->
+
+      <!-- 5. NER × Topic crosstab (per focus topic) -->
+      <div class="card" style="margin-top:14px">
+        <h3>🏷️ NER × Topic — entitas dominan di topik <span id="topic-ner-id">T0</span></h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Untuk dokumen yang dominan ke topik aktif, top entitas (PER/ORG/GPE/EVT/LAW/MON) yang co-occur.
+          Surface konteks naratif lengkap tanpa baca dokumen.
+        </p>
+        <div id="topic-ner-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:10px"></div>
+      </div>
+
+      <!-- 6. Quality (coherence) + engagement table — per source -->
+      <div class="card" style="margin-top:14px">
+        <h3>📐 Topic quality + engagement (per sumber)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          <strong>Coherence (UMass)</strong>: closer to 0 = lebih koheren (kata top sering co-occur).
+          Sangat negatif = topik noisy. <strong>Engagement</strong>: rata-rata likes/replies per dokumen (socmed only).
+          Sortable — klik header untuk urut.
+        </p>
+        <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
+          <table class="articles" id="topic-quality-table">
+            <thead><tr>
+              <th>#</th><th>Topic</th><th>n_docs</th><th>share</th>
+              <th>coherence</th><th>avg_likes</th><th>avg_replies</th><th>total_likes</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 7. Topic bursts (z-score) — per source -->
+      <div class="card" style="margin-top:14px">
+        <h3>🌋 Topic bursts (z-score per bulan, per sumber)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Bulan dimana mention topic melonjak ≥2σ di atas baseline rolling 3-bulan. Surface momen viral / breakings.
+        </p>
+        <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+          <table class="articles" id="topic-bursts-table">
+            <thead><tr><th>Month</th><th>Topic</th><th>Count</th><th>Baseline</th><th>z-score</th><th>Label</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 8 & 9. Group A vs B + Reporter specialty (news only) -->
+      <div id="topic-news-only" class="grid-2" style="margin-top:14px;display:none">
+        <div class="card">
+          <h3>⚖️ Group A (mainstream) vs Group B (alternatif) — framing per topic</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Share dokumen tiap grup di tiap topic. Bar ke kanan (oranye) = Group B leans, ke kiri (biru) = Group A leans.
+          </p>
+          <div class="chart chart-tall" id="chart-topic-groupab"></div>
+        </div>
+        <div class="card">
+          <h3>👤 Reporter specialization (top 15)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Entropy rendah = reporter <em>specialist</em> (fokus 1-2 topik). Tinggi = generalist.
+          </p>
+          <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+            <table class="articles" id="topic-reporter-table">
+              <thead><tr><th>Reporter</th><th>n</th><th>entropy</th><th>top topic</th><th>share</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 10. Cross-platform topic similarity (always visible) -->
+      <div class="card" style="margin-top:14px">
+        <h3>🔗 Cross-platform topic similarity</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Top topic pairs antar platform dengan top-word overlap tertinggi (Jaccard + weighted). Pilih dua platform untuk compare.
+        </p>
+        <div class="filters" style="margin-bottom:8px">
+          <label style="font-size:12px;color:var(--text-muted)">Compare:</label>
+          <select id="topic-sim-a">
+            <option value="news" selected>📰 news</option>
+            <option value="youtube">🎥 youtube</option>
+            <option value="twitter">🐦 twitter</option>
+            <option value="tiktok">🎵 tiktok</option>
+            <option value="instagram">📷 instagram</option>
+            <option value="facebook">📘 facebook</option>
+          </select>
+          <span style="color:#9ca3af;margin:0 8px">↔</span>
+          <select id="topic-sim-b">
+            <option value="news">📰 news</option>
+            <option value="youtube" selected>🎥 youtube</option>
+            <option value="twitter">🐦 twitter</option>
+            <option value="tiktok">🎵 tiktok</option>
+            <option value="instagram">📷 instagram</option>
+            <option value="facebook">📘 facebook</option>
+          </select>
+        </div>
+        <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+          <table class="articles" id="topic-sim-table">
+            <thead><tr><th>#</th><th>Source A topic</th><th>↔</th><th>Source B topic</th><th>Similarity</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 11. Lead-lag heatmap (always visible) -->
+      <div class="card" style="margin-top:14px">
+        <h3>⏱️ Lead-lag antar sumber (source-level)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Pearson correlation total monthly docs antar 2 sumber, di-shift -3..+3 bulan. Lag positif = sumber A leads (artikel muncul lebih dulu).
+          Lag negatif = source B leads.
+        </p>
+        <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+          <table class="articles" id="topic-leadlag-table">
+            <thead><tr><th>A</th><th>↔</th><th>B</th><th>Best lag (mo)</th><th>Correlation</th><th>Leader</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -3620,6 +3737,7 @@
 
     // ====== Topic Modelling (LDA per sumber) ======
     let TOPIC = null;
+    let TOPIC_INSIGHTS = null;
     const TOPIC_PALETTE = [
       '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
       '#8c564b', '#e377c2', '#17becf', '#bcbd22', '#7f7f7f',
@@ -3636,6 +3754,7 @@
 
     async function renderTopic() {
       TOPIC = await loadData('topic_resume');
+      TOPIC_INSIGHTS = await loadData('topic_insights');
       if (!TOPIC || !TOPIC.sources) {
         document.getElementById('tab-topic').innerHTML =
           '<div class="card"><h3>Topic resume belum di-generate</h3>' +
@@ -3646,6 +3765,8 @@
       const sel = document.getElementById('topic-source-filter');
       const pick = document.getElementById('topic-pick');
       const modeEl = document.getElementById('topic-time-mode');
+      const simAEl = document.getElementById('topic-sim-a');
+      const simBEl = document.getElementById('topic-sim-b');
       if (sel && !sel.dataset.bound) {
         sel.dataset.bound = '1';
         sel.addEventListener('change', () => renderTopicSource(sel.value));
@@ -3658,7 +3779,17 @@
         modeEl.dataset.bound = '1';
         modeEl.addEventListener('change', () => renderTopicTimeChart());
       }
+      if (simAEl && !simAEl.dataset.bound) {
+        simAEl.dataset.bound = '1';
+        simAEl.addEventListener('change', () => renderTopicSimTable());
+      }
+      if (simBEl && !simBEl.dataset.bound) {
+        simBEl.dataset.bound = '1';
+        simBEl.addEventListener('change', () => renderTopicSimTable());
+      }
       renderTopicSource(sel ? sel.value : 'news');
+      renderTopicSimTable();
+      renderTopicLeadLagTable();
     }
 
     let _topicState = { source: null, focusTopic: 0 };
@@ -3697,14 +3828,22 @@
       renderTopicWords();
       renderTopicTimeChart();
       renderTopicDocsTable();
+      // Advanced
+      renderTopicNERCrosstab();
+      renderTopicQualityTable();
+      renderTopicBurstsTable();
+      renderTopicGroupABChart();
+      renderTopicReporterTable();
     }
 
     function updateTopicFocus(topicId) {
       _topicState.focusTopic = topicId;
       document.getElementById('topic-words-id').textContent = `T${topicId}`;
       document.getElementById('topic-docs-id').textContent = `T${topicId}`;
+      document.getElementById('topic-ner-id').textContent = `T${topicId}`;
       renderTopicWords();
       renderTopicDocsTable();
+      renderTopicNERCrosstab();
     }
 
     function renderTopicDonut() {
@@ -3841,6 +3980,210 @@
           <td style="font-size:11px">${d.source_kind || '—'}</td>
           <td style="text-align:right;font-weight:bold;color:#1f77b4">${(d.topic_prob * 100).toFixed(1)}%</td>
           <td style="font-size:12px">${urlCell}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ====== Topic Advanced rendering ======
+
+    function _topicNERTypeColor(t) {
+      return ({ PER: '#1f77b4', ORG: '#2ca02c', GPE: '#ff7f0e', LOC: '#9467bd',
+                EVT: '#d62728', LAW: '#8c564b', MON: '#17becf' })[t] || '#6b7280';
+    }
+
+    function renderTopicNERCrosstab() {
+      const grid = document.getElementById('topic-ner-grid');
+      if (!grid) return;
+      const src = _topicState.source;
+      const tid = _topicState.focusTopic;
+      const ins = (TOPIC_INSIGHTS && TOPIC_INSIGHTS.ner_crosstab && TOPIC_INSIGHTS.ner_crosstab[src]) || [];
+      const row = ins.find(x => x.id === tid);
+      if (!row || !row.by_type || !Object.keys(row.by_type).length) {
+        grid.innerHTML = '<div style="padding:14px;color:#9ca3af;grid-column:1/-1">Tidak ada NER overlay untuk topic ini (kemungkinan dokumen tidak ter-NER, mis. komentar socmed di-skip dari NER per-doc).</div>';
+        return;
+      }
+      grid.innerHTML = Object.entries(row.by_type).map(([t, items]) => {
+        const color = _topicNERTypeColor(t);
+        const rows = items.map(i =>
+          `<li style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0">
+            <span>${i.text}</span>
+            <span style="color:#9ca3af;font-variant-numeric:tabular-nums">${fmt(i.count)}</span>
+           </li>`
+        ).join('');
+        return `<div style="border:1px solid #e5e7eb;border-radius:6px;padding:8px;background:#fafafa">
+          <div style="font-weight:bold;color:${color};font-size:12px;margin-bottom:4px">${t}</div>
+          <ul style="list-style:none;padding:0;margin:0">${rows}</ul>
+        </div>`;
+      }).join('');
+    }
+
+    function renderTopicQualityTable() {
+      const src = _topicState.source;
+      const tdata = TOPIC.sources[src];
+      const topics = tdata.topics || [];
+      const eng = (TOPIC_INSIGHTS && TOPIC_INSIGHTS.engagement && TOPIC_INSIGHTS.engagement[src]) || [];
+      const coh = (TOPIC_INSIGHTS && TOPIC_INSIGHTS.coherence && TOPIC_INSIGHTS.coherence[src]) || [];
+      const cohMap = Object.fromEntries(coh.map(r => [r.id, r.coherence_umass]));
+      const engMap = Object.fromEntries(eng.map(r => [r.id, r]));
+      const tbody = document.querySelector('#topic-quality-table tbody');
+      tbody.innerHTML = topics.map(t => {
+        const c = cohMap[t.id];
+        const e = engMap[t.id] || {};
+        const cohCell = c === undefined ? '—' :
+          `<span style="color:${c > -1 ? '#16a34a' : (c > -1.5 ? '#ea580c' : '#dc2626')}">${c.toFixed(3)}</span>`;
+        const color = TOPIC_PALETTE[t.id % TOPIC_PALETTE.length];
+        return `<tr>
+          <td><span style="display:inline-block;width:14px;height:14px;background:${color};border-radius:3px;vertical-align:middle"></span> T${t.id}</td>
+          <td style="font-size:12px">${t.label_auto}</td>
+          <td style="text-align:right">${fmt(t.n_docs)}</td>
+          <td style="text-align:right">${(t.share * 100).toFixed(1)}%</td>
+          <td style="text-align:right">${cohCell}</td>
+          <td style="text-align:right">${e.avg_likes !== undefined ? fmt(e.avg_likes) : '—'}</td>
+          <td style="text-align:right">${e.avg_replies !== undefined ? fmt(e.avg_replies) : '—'}</td>
+          <td style="text-align:right;color:#6b7280">${e.total_likes !== undefined ? fmt(e.total_likes) : '—'}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderTopicBurstsTable() {
+      const src = _topicState.source;
+      const bursts = (TOPIC_INSIGHTS && TOPIC_INSIGHTS.bursts && TOPIC_INSIGHTS.bursts[src]) || [];
+      const tbody = document.querySelector('#topic-bursts-table tbody');
+      if (!bursts.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af">Tidak ada burst (≥2σ) untuk sumber ini</td></tr>';
+        return;
+      }
+      tbody.innerHTML = bursts.map(b => {
+        const sev = b.z_score >= 3 ? '#dc2626' : (b.z_score >= 2.5 ? '#ea580c' : '#facc15');
+        const color = TOPIC_PALETTE[b.topic % TOPIC_PALETTE.length];
+        return `<tr>
+          <td style="font-size:12px;white-space:nowrap">${b.month}</td>
+          <td><span style="display:inline-block;width:10px;height:10px;background:${color};border-radius:2px;vertical-align:middle"></span> T${b.topic}</td>
+          <td style="text-align:right">${fmt(b.count)}</td>
+          <td style="text-align:right;color:#6b7280">${fmt(b.baseline)}</td>
+          <td style="text-align:right;color:${sev};font-weight:bold">${b.z_score}</td>
+          <td style="font-size:12px">${b.label_auto}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderTopicGroupABChart() {
+      const card = document.getElementById('topic-news-only');
+      const isNews = _topicState.source === 'news';
+      card.style.display = isNews ? 'grid' : 'none';
+      if (!isNews) return;
+      const gd = (TOPIC_INSIGHTS && TOPIC_INSIGHTS.group_divergence) || {};
+      const rows = gd.rows || [];
+      if (!rows.length) return;
+      const el = document.getElementById('chart-topic-groupab');
+      const chart = echarts.init(el);
+      const labels = rows.map(r => `T${r.id} — ${r.label_auto}`);
+      const aShares = rows.map(r => -r.a_share * 100);  // negative = leans A (left)
+      const bShares = rows.map(r => r.b_share * 100);
+      chart.setOption({
+        tooltip: { trigger: 'axis', formatter: ps => {
+          const idx = ps[0].dataIndex;
+          const r = rows[idx];
+          return `<strong>${r.label_auto}</strong><br/>` +
+            `Group A: ${(r.a_share*100).toFixed(1)}% (${r.a_count} docs)<br/>` +
+            `Group B: ${(r.b_share*100).toFixed(1)}% (${r.b_count} docs)<br/>` +
+            `Lean: ${r.lean > 0 ? 'B' : 'A'} by ${Math.abs(r.lean*100).toFixed(1)}%`;
+        }},
+        legend: { data: ['Group A (mainstream)', 'Group B (alternatif)'], top: 0, textStyle: { fontSize: 11 } },
+        grid: { left: 8, right: 24, top: 36, bottom: 30, containLabel: true },
+        xAxis: { type: 'value', name: '% share docs', axisLabel: { fontSize: 10, formatter: v => Math.abs(v) + '%' } },
+        yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10 } },
+        series: [
+          { name: 'Group A (mainstream)', type: 'bar', stack: 'g', data: aShares, itemStyle: { color: '#1f77b4' },
+            label: { show: true, position: 'left', fontSize: 10, formatter: p => Math.abs(p.value).toFixed(1) + '%' } },
+          { name: 'Group B (alternatif)', type: 'bar', stack: 'g', data: bShares, itemStyle: { color: '#ff7f0e' },
+            label: { show: true, position: 'right', fontSize: 10, formatter: p => p.value.toFixed(1) + '%' } },
+        ],
+      }, true);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderTopicReporterTable() {
+      if (_topicState.source !== 'news') return;
+      const rep = (TOPIC_INSIGHTS && TOPIC_INSIGHTS.reporter_specialty) || {};
+      const rows = rep.rows || [];
+      const tbody = document.querySelector('#topic-reporter-table tbody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af">No data</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(r => {
+        const color = TOPIC_PALETTE[r.top_topic_id % TOPIC_PALETTE.length];
+        const entColor = r.normalized_entropy < 0.5 ? '#dc2626' : (r.normalized_entropy < 0.7 ? '#ea580c' : '#16a34a');
+        return `<tr>
+          <td style="font-size:12px">${r.reporter}</td>
+          <td style="text-align:right">${r.n_docs}</td>
+          <td style="text-align:right;color:${entColor};font-weight:bold">${r.normalized_entropy.toFixed(2)}</td>
+          <td style="font-size:11px"><span style="display:inline-block;width:10px;height:10px;background:${color};border-radius:2px;vertical-align:middle"></span> T${r.top_topic_id} ${r.top_topic_label}</td>
+          <td style="text-align:right">${(r.top_topic_share * 100).toFixed(0)}%</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderTopicSimTable() {
+      const aEl = document.getElementById('topic-sim-a');
+      const bEl = document.getElementById('topic-sim-b');
+      const a = aEl ? aEl.value : 'news';
+      const b = bEl ? bEl.value : 'youtube';
+      if (a === b) {
+        document.querySelector('#topic-sim-table tbody').innerHTML =
+          '<tr><td colspan="5" style="text-align:center;color:#9ca3af">Pilih dua sumber berbeda</td></tr>';
+        return;
+      }
+      const cp = (TOPIC_INSIGHTS && TOPIC_INSIGHTS.cross_platform_sim) || {};
+      const key1 = `${a}__${b}`;
+      const key2 = `${b}__${a}`;
+      let pairs = cp[key1] || [];
+      let swapped = false;
+      if (!pairs.length && cp[key2]) {
+        pairs = cp[key2];
+        swapped = true;
+      }
+      const tbody = document.querySelector('#topic-sim-table tbody');
+      if (!pairs.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af">Tidak ada similarity > 0.05</td></tr>';
+        return;
+      }
+      tbody.innerHTML = pairs.map((p, i) => {
+        const aLabel = swapped ? p.b_label : p.a_label;
+        const aId = swapped ? p.b_id : p.a_id;
+        const bLabel = swapped ? p.a_label : p.b_label;
+        const bId = swapped ? p.a_id : p.b_id;
+        const bar = '█'.repeat(Math.max(1, Math.round(p.similarity * 20)));
+        return `<tr>
+          <td>${i + 1}</td>
+          <td style="font-size:12px"><strong>T${aId}</strong> ${aLabel}</td>
+          <td style="text-align:center;color:#9ca3af">↔</td>
+          <td style="font-size:12px"><strong>T${bId}</strong> ${bLabel}</td>
+          <td style="text-align:right;font-family:monospace;color:#1f77b4">${p.similarity.toFixed(3)} <span style="color:#94a3b8;font-size:10px">${bar}</span></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderTopicLeadLagTable() {
+      const ll = (TOPIC_INSIGHTS && TOPIC_INSIGHTS.lead_lag) || {};
+      const pairs = (ll.pairs || []).slice().sort((x, y) => y.best_correlation - x.best_correlation);
+      const tbody = document.querySelector('#topic-leadlag-table tbody');
+      if (!pairs.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af">No data</td></tr>';
+        return;
+      }
+      tbody.innerHTML = pairs.map(p => {
+        const lagDisplay = p.best_lag_months === 0 ? '0' : (p.best_lag_months > 0 ? `+${p.best_lag_months}` : p.best_lag_months);
+        const leaderColor = p.leader === 'tied' ? '#9ca3af' : '#16a34a';
+        const corrColor = p.best_correlation >= 0.7 ? '#16a34a' : (p.best_correlation >= 0.5 ? '#ea580c' : '#9ca3af');
+        return `<tr>
+          <td style="font-size:12px">${p.a}</td>
+          <td style="color:#9ca3af;text-align:center">↔</td>
+          <td style="font-size:12px">${p.b}</td>
+          <td style="text-align:center;font-family:monospace">${lagDisplay} mo</td>
+          <td style="text-align:right;color:${corrColor};font-weight:bold">${p.best_correlation.toFixed(3)}</td>
+          <td style="font-size:12px;color:${leaderColor}"><strong>${p.leader}</strong></td>
         </tr>`;
       }).join('');
     }
