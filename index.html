@@ -314,6 +314,7 @@
     <button data-tab="reporters">👥 Reporters &amp; Tags</button>
     <button data-tab="articles">📄 Articles</button>
     <button data-tab="ner">🏷️ Analisis NER</button>
+    <button data-tab="topic">🧩 Topic Modelling</button>
     <button data-tab="youtube">🎥 YouTube</button>
     <button data-tab="yt-comments">💬 YT Comments</button>
     <button data-tab="tiktok">🎵 TikTok</button>
@@ -1341,6 +1342,79 @@
         </div>
       </div>
     </section>
+
+    <!-- Tab: Topic Modelling (LDA per sumber) -->
+    <section class="tab-content" id="tab-topic">
+      <div class="card" style="margin-bottom:14px">
+        <h3 id="topic-title">🧩 Topic Modelling — pilih sumber</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Method: <code>TF-IDF + sklearn LatentDirichletAllocation (online)</code>.
+          Tiap sumber diproses terpisah karena gaya bahasa berbeda (news formal vs komentar informal).
+          Keyword pencarian (<em>tito karnavian / mendagri</em>) di-strip supaya topik bukan echoing keyword.
+          Ganti sumber via dropdown di bawah.
+        </p>
+        <div id="topic-kpi-row" class="kpi-row" style="margin-top:10px"></div>
+      </div>
+
+      <div class="filters" style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text-muted)"><strong>Switcher sumber:</strong></label>
+        <select id="topic-source-filter">
+          <option value="news" selected>📰 News (21 portal)</option>
+          <option value="youtube">🎥 YouTube (video + comment)</option>
+          <option value="twitter">🐦 Twitter (post + reply)</option>
+          <option value="tiktok">🎵 TikTok (post + comment)</option>
+          <option value="instagram">📷 Instagram (post + comment)</option>
+          <option value="facebook">📘 Facebook (post + comment)</option>
+        </select>
+        <label style="font-size:12px;color:var(--text-muted);margin-left:14px">Topik aktif:</label>
+        <select id="topic-pick"></select>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>🍩 Distribusi topik (share dokumen)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Berapa proporsi dokumen yang dominan ke tiap topic. Klik slice untuk pilih topik.
+          </p>
+          <div class="chart chart-tall" id="chart-topic-donut"></div>
+        </div>
+        <div class="card">
+          <h3 id="topic-words-title">📝 Top kata di topik <span id="topic-words-id">T0</span></h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Horizontal bar — kata dengan bobot LDA tertinggi di topik ini. Unigram + bigram.
+          </p>
+          <div class="chart chart-tall" id="chart-topic-words"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h3>📈 Topic over time (stacked area)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Distribusi topik per bulan — assignment berdasarkan dominan topic. Tiap topik dapat warna unik.
+        </p>
+        <div class="filters" style="margin-bottom:6px">
+          <label style="font-size:12px;color:var(--text-muted)">Tampilan:</label>
+          <select id="topic-time-mode">
+            <option value="absolute" selected>Absolute count</option>
+            <option value="percent">Percent (100%)</option>
+          </select>
+        </div>
+        <div id="chart-topic-time" style="height:380px"></div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h3>📚 Top dokumen untuk topik <span id="topic-docs-id">T0</span></h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Dokumen dengan probabilitas tertinggi di topik aktif. Klik untuk buka URL asli.
+        </p>
+        <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
+          <table class="articles" id="topic-docs-table">
+            <thead><tr><th>#</th><th>Date</th><th>Source</th><th>Prob</th><th>Snippet</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -1443,7 +1517,7 @@
 
     // ====== Tab navigation ======
     const tabsRendered = { overview: false, reporters: false, articles: false,
-                           ner: false,
+                           ner: false, topic: false,
                            youtube: false, 'yt-comments': false,
                            tiktok: false, 'tt-comments': false,
                            instagram: false, 'ig-comments': false,
@@ -1469,6 +1543,7 @@
         if (name === 'facebook') await renderFacebook();
         if (name === 'fb-comments') await renderFacebookComments();
         if (name === 'ner') await renderNER();
+        if (name === 'topic') await renderTopic();
         tabsRendered[name] = true;
       }
       // Resize charts after tab shown (ECharts needs visible container)
@@ -3541,6 +3616,233 @@
         }
       });
       renderInner();
+    }
+
+    // ====== Topic Modelling (LDA per sumber) ======
+    let TOPIC = null;
+    const TOPIC_PALETTE = [
+      '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+      '#8c564b', '#e377c2', '#17becf', '#bcbd22', '#7f7f7f',
+      '#e6194B', '#3cb44b',
+    ];
+    const TOPIC_SOURCE_LABEL = {
+      news: '📰 News (21 portal)',
+      youtube: '🎥 YouTube',
+      twitter: '🐦 Twitter',
+      tiktok: '🎵 TikTok',
+      instagram: '📷 Instagram',
+      facebook: '📘 Facebook',
+    };
+
+    async function renderTopic() {
+      TOPIC = await loadData('topic_resume');
+      if (!TOPIC || !TOPIC.sources) {
+        document.getElementById('tab-topic').innerHTML =
+          '<div class="card"><h3>Topic resume belum di-generate</h3>' +
+          '<p>Run <code>python analysis/code/analyze_topic_modeling.py --source all</code> ' +
+          'lalu <code>python analysis/code/build_topic_resume.py</code></p></div>';
+        return;
+      }
+      const sel = document.getElementById('topic-source-filter');
+      const pick = document.getElementById('topic-pick');
+      const modeEl = document.getElementById('topic-time-mode');
+      if (sel && !sel.dataset.bound) {
+        sel.dataset.bound = '1';
+        sel.addEventListener('change', () => renderTopicSource(sel.value));
+      }
+      if (pick && !pick.dataset.bound) {
+        pick.dataset.bound = '1';
+        pick.addEventListener('change', () => updateTopicFocus(parseInt(pick.value, 10)));
+      }
+      if (modeEl && !modeEl.dataset.bound) {
+        modeEl.dataset.bound = '1';
+        modeEl.addEventListener('change', () => renderTopicTimeChart());
+      }
+      renderTopicSource(sel ? sel.value : 'news');
+    }
+
+    let _topicState = { source: null, focusTopic: 0 };
+
+    function renderTopicSource(source) {
+      const data = (TOPIC && TOPIC.sources && TOPIC.sources[source]) || null;
+      if (!data) {
+        document.getElementById('topic-kpi-row').innerHTML =
+          `<div style="padding:12px;color:#9ca3af">No data for ${source}</div>`;
+        return;
+      }
+      _topicState.source = source;
+      _topicState.focusTopic = 0;
+
+      // Title + KPI strip
+      document.getElementById('topic-title').textContent =
+        `🧩 Topic Modelling — ${TOPIC_SOURCE_LABEL[source] || source}`;
+      const m = data.meta;
+      const kpiHtml = [
+        ['Sumber', TOPIC_SOURCE_LABEL[source] || source],
+        ['Dokumen', fmt(m.n_docs)],
+        ['Topik', m.n_topics],
+        ['Vocab', fmt(m.vocab_size)],
+        ['LDA fit', `${m.lda_fit_seconds}s`],
+      ].map(([k, v]) => `<div class="kpi"><div class="kpi-label">${k}</div><div class="kpi-value">${v}</div></div>`).join('');
+      document.getElementById('topic-kpi-row').innerHTML = kpiHtml;
+
+      // Populate topic picker
+      const pick = document.getElementById('topic-pick');
+      pick.innerHTML = data.topics.map(t =>
+        `<option value="${t.id}">T${t.id} — ${t.label_auto}</option>`
+      ).join('');
+      pick.value = '0';
+
+      renderTopicDonut();
+      renderTopicWords();
+      renderTopicTimeChart();
+      renderTopicDocsTable();
+    }
+
+    function updateTopicFocus(topicId) {
+      _topicState.focusTopic = topicId;
+      document.getElementById('topic-words-id').textContent = `T${topicId}`;
+      document.getElementById('topic-docs-id').textContent = `T${topicId}`;
+      renderTopicWords();
+      renderTopicDocsTable();
+    }
+
+    function renderTopicDonut() {
+      const data = TOPIC.sources[_topicState.source];
+      if (!data) return;
+      const el = document.getElementById('chart-topic-donut');
+      const chart = echarts.init(el);
+      const items = data.topics.map(t => ({
+        value: t.n_docs,
+        name: `T${t.id} — ${t.label_auto}`,
+        itemStyle: { color: TOPIC_PALETTE[t.id % TOPIC_PALETTE.length] },
+        topicId: t.id,
+      }));
+      chart.setOption({
+        tooltip: { trigger: 'item', formatter: p => `<strong>${p.name}</strong><br/>${fmt(p.value)} docs (${(p.percent).toFixed(1)}%)` },
+        legend: { type: 'scroll', top: 6, left: 'center', textStyle: { fontSize: 10 } },
+        series: [{
+          type: 'pie',
+          radius: ['40%', '70%'],
+          center: ['50%', '60%'],
+          avoidLabelOverlap: true,
+          itemStyle: { borderColor: '#fff', borderWidth: 2 },
+          label: { fontSize: 10, formatter: '{b|T{@topicId}}\n{c} docs', rich: { b: { fontWeight: 'bold' } } },
+          data: items,
+        }]
+      }, true);
+      chart.off('click');
+      chart.on('click', (params) => {
+        if (params.data && params.data.topicId !== undefined) {
+          const tid = params.data.topicId;
+          document.getElementById('topic-pick').value = String(tid);
+          updateTopicFocus(tid);
+        }
+      });
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderTopicWords() {
+      const data = TOPIC.sources[_topicState.source];
+      if (!data) return;
+      const t = data.topics.find(x => x.id === _topicState.focusTopic);
+      if (!t) return;
+      const el = document.getElementById('chart-topic-words');
+      const chart = echarts.init(el);
+      const words = (t.top_words || []).slice().reverse();
+      const color = TOPIC_PALETTE[t.id % TOPIC_PALETTE.length];
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: p => `<strong>${p[0].name}</strong><br/>weight: ${p[0].value.toFixed(3)}` },
+        grid: { left: 8, right: 24, top: 18, bottom: 30, containLabel: true },
+        xAxis: { type: 'value', axisLabel: { fontSize: 10 } },
+        yAxis: { type: 'category', data: words.map(w => w.word), axisLabel: { fontSize: 11 } },
+        series: [{
+          type: 'bar',
+          data: words.map(w => ({ value: w.weight, itemStyle: { color } })),
+          barWidth: '60%',
+          label: { show: true, position: 'right', fontSize: 10, formatter: p => p.value.toFixed(2) },
+        }],
+      }, true);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderTopicTimeChart() {
+      const data = TOPIC.sources[_topicState.source];
+      if (!data) return;
+      const el = document.getElementById('chart-topic-time');
+      const chart = echarts.init(el);
+      const monthly = data.monthly || {};
+      const months = Object.keys(monthly).sort();
+      if (!months.length) {
+        el.innerHTML = '<div style="padding:40px;text-align:center;color:#9ca3af">Tidak ada data temporal</div>';
+        return;
+      }
+      const mode = document.getElementById('topic-time-mode')?.value || 'absolute';
+      const topics = data.topics;
+      // Compute monthly totals for percent mode
+      const monthTotal = {};
+      for (const m of months) {
+        const o = monthly[m] || {};
+        monthTotal[m] = Object.values(o).reduce((a, b) => a + b, 0) || 1;
+      }
+      const series = topics.map(t => {
+        const id = String(t.id);
+        const raw = months.map(m => (monthly[m] || {})[id] || 0);
+        const data = mode === 'percent'
+          ? raw.map((v, i) => Math.round((v / monthTotal[months[i]]) * 1000) / 10)
+          : raw;
+        const color = TOPIC_PALETTE[t.id % TOPIC_PALETTE.length];
+        return {
+          name: `T${t.id} — ${t.label_auto}`,
+          type: 'line',
+          stack: 'topic',
+          smooth: true,
+          areaStyle: { color, opacity: 0.55 },
+          lineStyle: { width: 0 },
+          symbol: 'none',
+          itemStyle: { color },
+          data,
+        };
+      });
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+        legend: { type: 'scroll', top: 0, textStyle: { fontSize: 10 } },
+        grid: { left: 8, right: 24, top: 40, bottom: 40, containLabel: true },
+        xAxis: { type: 'category', data: months, axisLabel: { rotate: 45, fontSize: 10 } },
+        yAxis: {
+          type: 'value',
+          name: mode === 'percent' ? '%' : 'docs',
+          max: mode === 'percent' ? 100 : null,
+          axisLabel: { fontSize: 10 },
+        },
+        dataZoom: [{ type: 'inside' }, { type: 'slider', height: 18, bottom: 6 }],
+        series,
+      }, true);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderTopicDocsTable() {
+      const data = TOPIC.sources[_topicState.source];
+      if (!data) return;
+      const tid = _topicState.focusTopic;
+      const docs = (data.top_docs || {})[String(tid)] || [];
+      const tbody = document.querySelector('#topic-docs-table tbody');
+      if (!docs.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af">Tidak ada dokumen untuk topik ini</td></tr>';
+        return;
+      }
+      tbody.innerHTML = docs.map((d, i) => {
+        const urlCell = d.url
+          ? `<a href="${d.url}" target="_blank" rel="noopener" style="color:#1f77b4;text-decoration:none">${d.snippet || '(no snippet)'}</a>`
+          : (d.snippet || '(no snippet)');
+        return `<tr>
+          <td>${i + 1}</td>
+          <td style="font-size:11px;white-space:nowrap">${d.date || '—'}</td>
+          <td style="font-size:11px">${d.source_kind || '—'}</td>
+          <td style="text-align:right;font-weight:bold;color:#1f77b4">${(d.topic_prob * 100).toFixed(1)}%</td>
+          <td style="font-size:12px">${urlCell}</td>
+        </tr>`;
+      }).join('');
     }
 
     // ====== Boot ======
