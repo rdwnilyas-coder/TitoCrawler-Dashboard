@@ -316,6 +316,7 @@
     <button data-tab="ner">🏷️ Analisis NER</button>
     <button data-tab="topic">🧩 Topic Modelling</button>
     <button data-tab="sna-socmed">📡 SNA Sosmed</button>
+    <button data-tab="sentiment">💚💛💔 Sentiment</button>
     <button data-tab="youtube">🎥 YouTube</button>
     <button data-tab="yt-comments">💬 YT Comments</button>
     <button data-tab="tiktok">🎵 TikTok</button>
@@ -1518,6 +1519,8 @@
         </div>
       </div>
 
+      <!-- (sentiment tab inserted before SNA Sosmed section ends) -->
+
       <!-- 11. Lead-lag heatmap (always visible) -->
       <div class="card" style="margin-top:14px">
         <h3>⏱️ Lead-lag antar sumber (source-level)</h3>
@@ -1610,6 +1613,86 @@
             <div style="font-size:12px;font-weight:bold;color:#374151;margin-bottom:6px">📖 Topik referensi (platform aktif)</div>
             <ul id="snasm-topic-legend" style="list-style:none;padding:0;margin:0;font-size:12px;max-height:320px;overflow-y:auto"></ul>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab: Sentiment Analysis (ABSA hybrid) -->
+    <section class="tab-content" id="tab-sentiment">
+      <div class="card" style="margin-bottom:14px">
+        <h3 id="sentiment-title">💚💛💔 Sentiment Analysis — pilih sumber</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          <strong>Stage 1 (BERT)</strong>: <code>w11wo/indonesian-roberta-base-sentiment-classifier</code>
+          klasifikasi per-kalimat (3-class: positive/neutral/negative).
+          <strong>Stage 2 (Aspect)</strong>: bind kalimat sentiment ke entitas NER yang ada di kalimat tsb.
+          <strong>Stage 3 (LLM, optional)</strong>: Claude Haiku untuk kasus ambigu/sarkasme (override BERT label).
+          <em>Caveat</em>: aspect-window approach kadang attribute sentiment "kalimat" ke entity yang hanya disebut
+          (mis. "kantor berita Antara" muncul di artikel bencana → entitas dapat label negatif walau bukan sentiment ke Antara).
+        </p>
+        <div id="sentiment-kpi-row" class="kpi-row" style="margin-top:10px"></div>
+      </div>
+
+      <div class="filters" style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text-muted)"><strong>Switcher sumber:</strong></label>
+        <select id="sentiment-source">
+          <option value="news" selected>📰 News (21 portal)</option>
+          <option value="youtube">🎥 YouTube</option>
+          <option value="twitter">🐦 Twitter</option>
+          <option value="tiktok">🎵 TikTok</option>
+          <option value="instagram">📷 Instagram</option>
+          <option value="facebook">📘 Facebook</option>
+        </select>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>🍩 Overall sentiment distribution (sentence-level)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Proporsi neg/neu/pos pada semua kalimat di sumber aktif.
+          </p>
+          <div class="chart chart-tall" id="chart-sentiment-donut"></div>
+        </div>
+        <div class="card">
+          <h3>📈 Monthly trend</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Tren positive/neutral/negative per bulan. Naik turun = shift narrative.
+          </p>
+          <div class="chart chart-tall" id="chart-sentiment-monthly"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h3>🎯 Per-entity sentiment (top 30, aspect-bound)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          <strong>Net sentiment</strong> = (pos − neg) / total. Klik header untuk sort.
+          Hover example untuk lihat sample kalimat.
+        </p>
+        <div style="overflow-x:auto;max-height:500px;overflow-y:auto">
+          <table class="articles" id="sentiment-entity-table">
+            <thead><tr>
+              <th>#</th><th>Entity</th><th>Type</th><th>n</th>
+              <th style="text-align:right">Pos</th><th style="text-align:right">Neu</th><th style="text-align:right">Neg</th>
+              <th>% Pos</th><th>% Neg</th><th>Net</th><th>Bar</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <h3>🔴 Top negative (most-criticized targets)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Entitas dengan % negative tertinggi (n>=10). <em>Operational watch list</em>.
+          </p>
+          <div class="chart chart-tall" id="chart-sentiment-neg"></div>
+        </div>
+        <div class="card">
+          <h3>🟢 Top positive (most-praised targets)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Entitas dengan % positive tertinggi (n>=10).
+          </p>
+          <div class="chart chart-tall" id="chart-sentiment-pos"></div>
         </div>
       </div>
     </section>
@@ -1715,7 +1798,7 @@
 
     // ====== Tab navigation ======
     const tabsRendered = { overview: false, reporters: false, articles: false,
-                           ner: false, topic: false, 'sna-socmed': false,
+                           ner: false, topic: false, 'sna-socmed': false, sentiment: false,
                            youtube: false, 'yt-comments': false,
                            tiktok: false, 'tt-comments': false,
                            instagram: false, 'ig-comments': false,
@@ -1743,6 +1826,7 @@
         if (name === 'ner') await renderNER();
         if (name === 'topic') await renderTopic();
         if (name === 'sna-socmed') await renderSNASocmed();
+        if (name === 'sentiment') await renderSentiment();
         tabsRendered[name] = true;
       }
       // Resize charts after tab shown (ECharts needs visible container)
@@ -4493,6 +4577,176 @@
           }).join('');
         }
       }
+    }
+
+    // ====== Sentiment (ABSA hybrid) ======
+    let SENTIMENT = null;
+    const SENTIMENT_COLORS = { positive: '#16a34a', neutral: '#9ca3af', negative: '#dc2626' };
+    const SENTIMENT_STATE = { source: 'news' };
+
+    async function renderSentiment() {
+      SENTIMENT = await loadData('sentiment_resume');
+      if (!SENTIMENT || !SENTIMENT.sources) {
+        document.getElementById('tab-sentiment').innerHTML =
+          '<div class="card"><h3>Sentiment data belum di-generate</h3>' +
+          '<p>Run <code>python analysis/code/analyze_sentiment_hybrid.py --stage 1 --source all</code> ' +
+          'lalu <code>python analysis/code/aggregate_sentiment.py</code></p></div>';
+        return;
+      }
+      const sel = document.getElementById('sentiment-source');
+      if (sel && !sel.dataset.bound) {
+        sel.dataset.bound = '1';
+        sel.addEventListener('change', () => renderSentimentSource(sel.value));
+      }
+      // Default to first available source
+      const avail = SENTIMENT.meta.sources || [];
+      const pref = sel ? sel.value : 'news';
+      const chosen = avail.includes(pref) ? pref : (avail[0] || 'news');
+      if (sel) sel.value = chosen;
+      renderSentimentSource(chosen);
+    }
+
+    function renderSentimentSource(source) {
+      const data = SENTIMENT.sources[source];
+      if (!data) {
+        document.getElementById('sentiment-kpi-row').innerHTML =
+          `<div style="padding:12px;color:#9ca3af">Data untuk <strong>${source}</strong> belum di-generate. Run <code>analyze_sentiment_hybrid.py --source ${source}</code>.</div>`;
+        ['chart-sentiment-donut','chart-sentiment-monthly','chart-sentiment-neg','chart-sentiment-pos']
+          .forEach(id => { const el=document.getElementById(id); if (el) el.innerHTML=''; });
+        document.querySelector('#sentiment-entity-table tbody').innerHTML = '';
+        return;
+      }
+      SENTIMENT_STATE.source = source;
+      const labels = { news:'📰 News', youtube:'🎥 YouTube', twitter:'🐦 Twitter',
+                       tiktok:'🎵 TikTok', instagram:'📷 Instagram', facebook:'📘 Facebook' };
+      document.getElementById('sentiment-title').textContent =
+        `💚💛💔 Sentiment Analysis — ${labels[source] || source}`;
+      const m = data.meta;
+      const o = data.overall.pct || {};
+      const netLabel = ((o.positive||0) - (o.negative||0));
+      const kpiHtml = [
+        ['Sumber', labels[source] || source],
+        ['Sentences', fmt(m.n_sentences)],
+        ['Aspects', fmt(m.n_aspects)],
+        ['% Positive', `${((o.positive||0)*100).toFixed(1)}%`],
+        ['% Negative', `${((o.negative||0)*100).toFixed(1)}%`],
+        ['Net (P−N)', `${(netLabel*100>=0?'+':'')}${(netLabel*100).toFixed(1)}%`],
+        ['LLM labels', fmt(m.n_llm_labels)],
+      ].map(([k,v]) => `<div class="kpi"><div class="kpi-label">${k}</div><div class="kpi-value">${v}</div></div>`).join('');
+      document.getElementById('sentiment-kpi-row').innerHTML = kpiHtml;
+
+      renderSentimentDonut();
+      renderSentimentMonthly();
+      renderSentimentEntityTable();
+      renderSentimentExtremes();
+    }
+
+    function renderSentimentDonut() {
+      const data = SENTIMENT.sources[SENTIMENT_STATE.source];
+      const c = data.overall.counts || {};
+      const chart = echarts.init(document.getElementById('chart-sentiment-donut'));
+      chart.setOption({
+        tooltip: { trigger: 'item', formatter: p => `<strong>${p.name}</strong><br/>${fmt(p.value)} (${p.percent.toFixed(1)}%)` },
+        legend: { top: 6, left: 'center', textStyle: { fontSize: 11 } },
+        series: [{
+          type: 'pie', radius: ['45%', '70%'], center: ['50%', '58%'],
+          avoidLabelOverlap: true,
+          itemStyle: { borderColor: '#fff', borderWidth: 2 },
+          label: { fontSize: 11, formatter: '{b}\n{c} ({d}%)' },
+          data: [
+            { value: c.positive||0, name: 'positive', itemStyle: { color: SENTIMENT_COLORS.positive } },
+            { value: c.neutral||0,  name: 'neutral',  itemStyle: { color: SENTIMENT_COLORS.neutral } },
+            { value: c.negative||0, name: 'negative', itemStyle: { color: SENTIMENT_COLORS.negative } },
+          ],
+        }],
+      }, true);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderSentimentMonthly() {
+      const data = SENTIMENT.sources[SENTIMENT_STATE.source];
+      const monthly = data.monthly || {};
+      const months = Object.keys(monthly).sort();
+      const chart = echarts.init(document.getElementById('chart-sentiment-monthly'));
+      const series = ['positive','neutral','negative'].map(lbl => ({
+        name: lbl, type: 'line', smooth: true,
+        data: months.map(m => (monthly[m] || {})[lbl] || 0),
+        itemStyle: { color: SENTIMENT_COLORS[lbl] },
+        lineStyle: { color: SENTIMENT_COLORS[lbl], width: 2 },
+      }));
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+        legend: { top: 0, textStyle: { fontSize: 11 } },
+        grid: { left: 8, right: 24, top: 36, bottom: 40, containLabel: true },
+        xAxis: { type: 'category', data: months, axisLabel: { rotate: 45, fontSize: 10 } },
+        yAxis: { type: 'value', name: 'count', axisLabel: { fontSize: 10 } },
+        dataZoom: [{ type: 'inside' }, { type: 'slider', height: 18, bottom: 6 }],
+        series,
+      }, true);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderSentimentEntityTable() {
+      const data = SENTIMENT.sources[SENTIMENT_STATE.source];
+      const rows = (data.top_entities || []).slice(0, 30);
+      const tbody = document.querySelector('#sentiment-entity-table tbody');
+      tbody.innerHTML = rows.map((r, i) => {
+        const pos = r.pos, neu = r.neu, neg = r.neg, n = r.n_mentions;
+        const posW = Math.round(pos / n * 100);
+        const negW = Math.round(neg / n * 100);
+        const neuW = 100 - posW - negW;
+        const bar = `<div style="display:flex;height:14px;border-radius:3px;overflow:hidden;width:140px;background:#f3f4f6">
+          <div style="width:${posW}%;background:${SENTIMENT_COLORS.positive}"></div>
+          <div style="width:${neuW}%;background:${SENTIMENT_COLORS.neutral}"></div>
+          <div style="width:${negW}%;background:${SENTIMENT_COLORS.negative}"></div>
+        </div>`;
+        const netColor = r.net_sentiment > 0.05 ? SENTIMENT_COLORS.positive
+                        : r.net_sentiment < -0.05 ? SENTIMENT_COLORS.negative
+                        : SENTIMENT_COLORS.neutral;
+        return `<tr>
+          <td>${i + 1}</td>
+          <td><strong>${r.entity}</strong></td>
+          <td style="font-size:10px;color:#9ca3af">${r.type || '—'}</td>
+          <td style="text-align:right">${fmt(n)}</td>
+          <td style="text-align:right;color:${SENTIMENT_COLORS.positive}">${pos}</td>
+          <td style="text-align:right;color:${SENTIMENT_COLORS.neutral}">${neu}</td>
+          <td style="text-align:right;color:${SENTIMENT_COLORS.negative}">${neg}</td>
+          <td style="text-align:right">${(r.pos_pct*100).toFixed(0)}%</td>
+          <td style="text-align:right">${(r.neg_pct*100).toFixed(0)}%</td>
+          <td style="text-align:right;color:${netColor};font-weight:bold">${r.net_sentiment>=0?'+':''}${r.net_sentiment.toFixed(2)}</td>
+          <td>${bar}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderSentimentExtremes() {
+      const data = SENTIMENT.sources[SENTIMENT_STATE.source];
+      // Filter out entities with too few mentions (n<10) to avoid noise
+      const filtered = (data.top_entities || []).filter(r => r.n_mentions >= 10);
+      const renderBar = (containerId, rows, color, key) => {
+        const top = [...rows].sort((a,b) => b[key] - a[key]).slice(0, 12).reverse();
+        const chart = echarts.init(document.getElementById(containerId));
+        chart.setOption({
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                     formatter: ps => {
+                       const idx = ps[0].dataIndex;
+                       const r = top[idx];
+                       return `<strong>${r.entity}</strong><br/>n=${r.n_mentions}<br/>pos=${r.pos} neu=${r.neu} neg=${r.neg}<br/>%${key.replace('_pct','')}: ${(ps[0].value).toFixed(1)}%`;
+                     }},
+          grid: { left: 8, right: 32, top: 8, bottom: 16, containLabel: true },
+          xAxis: { type: 'value', name: '%', axisLabel: { fontSize: 10 } },
+          yAxis: { type: 'category', data: top.map(r => r.entity), axisLabel: { fontSize: 11 } },
+          series: [{
+            type: 'bar',
+            data: top.map(r => ({ value: r[key] * 100, itemStyle: { color } })),
+            label: { show: true, position: 'right', fontSize: 10, formatter: p => p.value.toFixed(1) + '%' },
+            barWidth: '60%',
+          }],
+        }, true);
+        window.addEventListener('resize', () => chart.resize());
+      };
+      renderBar('chart-sentiment-neg', filtered, SENTIMENT_COLORS.negative, 'neg_pct');
+      renderBar('chart-sentiment-pos', filtered, SENTIMENT_COLORS.positive, 'pos_pct');
     }
 
     // ====== Boot ======
