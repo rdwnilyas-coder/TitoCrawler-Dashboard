@@ -1194,6 +1194,66 @@
         </p>
       </div>
 
+      <!-- Event SNA — full-width force-directed -->
+      <div class="card" style="margin-top:14px">
+        <h3>📅 SNA — Network antar event (EVT co-occurrence)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          1 bubble = 1 event (mis. Pilkada Serentak 2024, Pelantikan Kepala Daerah, Operasi Tangkap Tangan).
+          <strong>Ukuran</strong> = jumlah dokumen yang menyebut event tsb. <strong>Garis</strong> = event ini
+          disebut bersama event lain dalam satu artikel/post. Warna = komunitas Louvain (cluster event yang
+          sering muncul satu konteks).
+        </p>
+        <div class="filters" style="margin-bottom:8px">
+          <label style="font-size:12px;color:var(--text-muted)">Top N nodes:</label>
+          <select id="ner-evt-sna-topn">
+            <option value="20">20</option>
+            <option value="40" selected>40</option>
+            <option value="80">80</option>
+          </select>
+          <label style="font-size:12px;color:var(--text-muted);margin-left:12px">Layout:</label>
+          <select id="ner-evt-sna-layout">
+            <option value="force" selected>Force-directed</option>
+            <option value="circular">Circular</option>
+          </select>
+          <label style="font-size:12px;color:var(--text-muted);margin-left:12px">
+            <input type="checkbox" id="ner-evt-sna-labels" checked /> Label semua node
+          </label>
+        </div>
+        <div id="chart-ner-evt-sna" style="height:600px;background:#fafafa;border:1px solid #e5e7eb;border-radius:6px"></div>
+      </div>
+
+      <!-- Event-Person bipartite -->
+      <div class="card" style="margin-top:14px">
+        <h3>👥📅 Bipartite — Person ↔ Event</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Tokoh (kiri, biru) terhubung ke event (kanan, oranye) yang sering disebut bersama.
+          Tebal garis = berapa kali co-occur di artikel/post yang sama. Berguna untuk lihat
+          "siapa terkait event apa".
+        </p>
+        <div class="filters" style="margin-bottom:8px">
+          <label style="font-size:12px;color:var(--text-muted)">Min edge weight:</label>
+          <select id="ner-bp-minw">
+            <option value="3" selected>3</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+          </select>
+          <label style="font-size:12px;color:var(--text-muted);margin-left:12px">Top N person:</label>
+          <select id="ner-bp-topper">
+            <option value="10">10</option>
+            <option value="15" selected>15</option>
+            <option value="25">25</option>
+          </select>
+          <label style="font-size:12px;color:var(--text-muted);margin-left:12px">Top N event:</label>
+          <select id="ner-bp-topevt">
+            <option value="15">15</option>
+            <option value="25" selected>25</option>
+            <option value="40">40</option>
+          </select>
+        </div>
+        <div id="chart-ner-bipartite" style="height:600px;background:#fafafa;border:1px solid #e5e7eb;border-radius:6px"></div>
+      </div>
+
       <!-- 3. Portal diversity + Cross-platform rank diff -->
       <div class="grid-2" style="margin-top:14px">
         <div class="card">
@@ -2744,6 +2804,8 @@
       renderNERTemporal();
       renderNERSpikeDensity();
       renderNERSNA();
+      renderNEREventSNA();
+      renderNERBipartite();
 
       // 1. Canonical clusters
       const canonBody = document.querySelector('#ner-canon-table tbody');
@@ -3105,6 +3167,238 @@
 
       // Bind controls
       [topnEl, layoutEl, labelsEl].forEach(el => {
+        if (el && !el.dataset.bound) {
+          el.dataset.bound = '1';
+          el.addEventListener('change', renderInner);
+        }
+      });
+      renderInner();
+    }
+
+    // ====== NER Event SNA (EVT co-occurrence) ======
+    function renderNEREventSNA() {
+      if (!NER_INSIGHTS) return;
+      const net = NER_INSIGHTS.eventNetwork || {};
+      const rawNodes = net.nodes || [];
+      const rawEdges = net.edges || [];
+      const el = document.getElementById('chart-ner-evt-sna');
+      if (!el) return;
+      if (!rawNodes.length) {
+        el.innerHTML = '<div style="padding:60px;text-align:center;color:#9ca3af">Tidak ada event network data</div>';
+        return;
+      }
+
+      const topnEl = document.getElementById('ner-evt-sna-topn');
+      const layoutEl = document.getElementById('ner-evt-sna-layout');
+      const labelsEl = document.getElementById('ner-evt-sna-labels');
+
+      const renderInner = () => {
+        const topN = parseInt(topnEl?.value || '40', 10);
+        const layout = layoutEl?.value || 'force';
+        const showAllLabels = labelsEl?.checked ?? true;
+
+        const nodes = rawNodes.slice(0, topN);
+        const nodeIds = new Set(nodes.map(n => n.id));
+        const edges = rawEdges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
+
+        const maxDeg = Math.max(1, ...nodes.map(n => n.weightedDegree));
+        const minDeg = Math.min(...nodes.map(n => n.weightedDegree));
+        const scaleNode = (d) => {
+          const t = (d - minDeg) / Math.max(1, maxDeg - minDeg);
+          return 14 + t * 56;
+        };
+        const maxEdgeW = Math.max(1, ...edges.map(e => e.weight));
+        const scaleEdge = (w) => 0.5 + (w / maxEdgeW) * 5;
+
+        const echNodes = nodes.map(n => ({
+          id: n.id, name: n.id,
+          symbolSize: scaleNode(n.weightedDegree),
+          value: n.weightedDegree,
+          category: n.community,
+          itemStyle: { color: SNA_PALETTE[n.community % SNA_PALETTE.length] },
+          label: {
+            show: showAllLabels || scaleNode(n.weightedDegree) >= 35,
+            fontSize: Math.max(10, Math.min(13, scaleNode(n.weightedDegree) / 3.2)),
+            color: '#1a1a1a',
+          },
+          mentions: n.totalMentions,
+        }));
+        const commIds = [...new Set(nodes.map(n => n.community))].sort((a, b) => a - b);
+        const categories = commIds.map(c => ({
+          name: `C${c}`, itemStyle: { color: SNA_PALETTE[c % SNA_PALETTE.length] }
+        }));
+        const echEdges = edges.map(e => ({
+          source: e.source, target: e.target, value: e.weight,
+          lineStyle: { width: scaleEdge(e.weight), color: '#9ca3af', opacity: 0.55 + (e.weight / maxEdgeW) * 0.35 }
+        }));
+
+        const chart = echarts.init(el);
+        const option = {
+          tooltip: {
+            formatter: (p) => {
+              if (p.dataType === 'edge') {
+                return `<strong>${p.data.source}</strong> ⟷ <strong>${p.data.target}</strong><br/>co-occurrence: ${fmt(p.data.value)}`;
+              }
+              return `<strong>${p.data.name}</strong><br/>weighted degree: ${fmt(p.data.value)}<br/>mentions: ${fmt(p.data.mentions || 0)}<br/>community: C${p.data.category}`;
+            }
+          },
+          legend: [{ data: categories.map(c => c.name), top: 0, textStyle: { fontSize: 11 } }],
+          series: [{
+            type: 'graph', layout: layout, roam: true, draggable: true,
+            data: echNodes, links: echEdges, categories: categories,
+            label: { show: true, position: 'right', formatter: '{b}' },
+            edgeSymbol: ['none', 'none'],
+            emphasis: {
+              focus: 'adjacency',
+              lineStyle: { width: 4, color: '#1f2937', opacity: 0.9 },
+              itemStyle: { borderColor: '#1f2937', borderWidth: 2 },
+              label: { fontSize: 13, fontWeight: 'bold' }
+            },
+            force: layout === 'force' ? {
+              repulsion: 260, gravity: 0.04, edgeLength: [60, 160], friction: 0.6,
+              layoutAnimation: true
+            } : undefined,
+            scaleLimit: { min: 0.4, max: 4 },
+          }],
+        };
+        chart.setOption(option, true);
+        window.addEventListener('resize', () => chart.resize());
+      };
+
+      [topnEl, layoutEl, labelsEl].forEach(el => {
+        if (el && !el.dataset.bound) {
+          el.dataset.bound = '1';
+          el.addEventListener('change', renderInner);
+        }
+      });
+      renderInner();
+    }
+
+    // ====== NER Bipartite (Person ↔ Event) ======
+    function renderNERBipartite() {
+      if (!NER_INSIGHTS) return;
+      const bp = NER_INSIGHTS.eventPersonBipartite || {};
+      const allEdges = bp.edges || [];
+      const allEvents = bp.events || [];
+      const allPersons = bp.persons || [];
+      const el = document.getElementById('chart-ner-bipartite');
+      if (!el) return;
+      if (!allEdges.length) {
+        el.innerHTML = '<div style="padding:60px;text-align:center;color:#9ca3af">Tidak ada bipartite data</div>';
+        return;
+      }
+
+      const minwEl   = document.getElementById('ner-bp-minw');
+      const topperEl = document.getElementById('ner-bp-topper');
+      const topevtEl = document.getElementById('ner-bp-topevt');
+
+      const renderInner = () => {
+        const minW   = parseInt(minwEl?.value   || '3', 10);
+        const topPer = parseInt(topperEl?.value || '15', 10);
+        const topEvt = parseInt(topevtEl?.value || '25', 10);
+
+        // Filter persons & events by surviving-edge totals
+        const personScore = {};
+        const eventScore = {};
+        for (const e of allEdges) {
+          if (e.weight < minW) continue;
+          personScore[e.person] = (personScore[e.person] || 0) + e.weight;
+          eventScore[e.event]   = (eventScore[e.event]   || 0) + e.weight;
+        }
+        const persons = Object.entries(personScore)
+          .sort((a, b) => b[1] - a[1]).slice(0, topPer).map(x => x[0]);
+        const events  = Object.entries(eventScore)
+          .sort((a, b) => b[1] - a[1]).slice(0, topEvt).map(x => x[0]);
+        const personsSet = new Set(persons);
+        const eventsSet  = new Set(events);
+        const edges = allEdges.filter(e => e.weight >= minW
+          && personsSet.has(e.person) && eventsSet.has(e.event));
+
+        if (!edges.length) {
+          el.innerHTML = '<div style="padding:60px;text-align:center;color:#9ca3af">Tidak ada edge pada filter ini — turunkan min weight</div>';
+          return;
+        }
+
+        const maxW = Math.max(...edges.map(e => e.weight));
+        const PERSON_COLOR = '#3b82f6';
+        const EVENT_COLOR  = '#f59e0b';
+
+        // Layout: bipartite — persons on left x=0, events on right x=1
+        const nP = persons.length;
+        const nE = events.length;
+        const personNodes = persons.map((p, i) => ({
+          id: 'P|' + p,
+          name: p,
+          x: 0, y: (i + 0.5) / nP,
+          category: 0,
+          symbolSize: 16 + Math.sqrt(personScore[p]) * 1.4,
+          itemStyle: { color: PERSON_COLOR },
+          label: { show: true, position: 'left', fontSize: 11, color: '#1a1a1a' },
+          tooltip: { formatter: () => `<strong>${p}</strong><br/>total weight: ${fmt(personScore[p])}` },
+        }));
+        const eventNodes = events.map((e, i) => ({
+          id: 'E|' + e,
+          name: e,
+          x: 1, y: (i + 0.5) / nE,
+          category: 1,
+          symbolSize: 14 + Math.sqrt(eventScore[e]) * 1.2,
+          itemStyle: { color: EVENT_COLOR },
+          label: { show: true, position: 'right', fontSize: 11, color: '#1a1a1a' },
+          tooltip: { formatter: () => `<strong>${e}</strong><br/>total weight: ${fmt(eventScore[e])}` },
+        }));
+        const echEdges = edges.map(ed => ({
+          source: 'P|' + ed.person,
+          target: 'E|' + ed.event,
+          value: ed.weight,
+          lineStyle: {
+            width: 0.4 + (ed.weight / maxW) * 5.5,
+            color: '#94a3b8',
+            opacity: 0.35 + (ed.weight / maxW) * 0.55,
+            curveness: 0.18,
+          },
+        }));
+
+        const chart = echarts.init(el);
+        chart.setOption({
+          tooltip: {
+            formatter: (p) => {
+              if (p.dataType === 'edge') {
+                const src = (p.data.source || '').replace(/^P\|/, '');
+                const tgt = (p.data.target || '').replace(/^E\|/, '');
+                return `<strong>${src}</strong> → <strong>${tgt}</strong><br/>co-occurrence: ${fmt(p.data.value)}`;
+              }
+              return p.data.tooltip?.formatter() || p.data.name;
+            }
+          },
+          legend: [{
+            data: [{ name: 'Person', icon: 'circle' }, { name: 'Event', icon: 'circle' }],
+            top: 0, textStyle: { fontSize: 11 },
+            selected: { Person: true, Event: true },
+          }],
+          series: [{
+            type: 'graph',
+            layout: 'none',  // use x/y coordinates manually
+            coordinateSystem: undefined,
+            roam: true,
+            data: [...personNodes, ...eventNodes],
+            links: echEdges,
+            categories: [
+              { name: 'Person', itemStyle: { color: PERSON_COLOR } },
+              { name: 'Event',  itemStyle: { color: EVENT_COLOR  } },
+            ],
+            edgeSymbol: ['none', 'arrow'],
+            emphasis: {
+              focus: 'adjacency',
+              lineStyle: { width: 4, color: '#1f2937', opacity: 0.85 },
+              itemStyle: { borderColor: '#1f2937', borderWidth: 2 },
+            },
+            scaleLimit: { min: 0.4, max: 4 },
+          }],
+        }, true);
+        window.addEventListener('resize', () => chart.resize());
+      };
+
+      [minwEl, topperEl, topevtEl].forEach(el => {
         if (el && !el.dataset.bound) {
           el.dataset.bound = '1';
           el.addEventListener('change', renderInner);
