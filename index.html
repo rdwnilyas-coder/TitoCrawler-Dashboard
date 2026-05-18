@@ -1163,6 +1163,37 @@
         </div>
       </div>
 
+      <!-- SNA graph — full-width force-directed -->
+      <div class="card" style="margin-top:14px">
+        <h3>🕸️ SNA — Network koneksi antar tokoh</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          1 bubble = 1 tokoh. <strong>Ukuran bubble</strong> = volume mention (weighted degree).
+          <strong>Garis antar bubble</strong> = berapa kali muncul bareng di dokumen/komentar/post yang sama
+          (tebal = sering bareng). Warna bubble = komunitas hasil Louvain detection.
+          Drag bubble untuk geser, scroll untuk zoom.
+        </p>
+        <div class="filters" style="margin-bottom:8px">
+          <label style="font-size:12px;color:var(--text-muted)">Top N nodes:</label>
+          <select id="ner-sna-topn">
+            <option value="30">30</option>
+            <option value="50" selected>50</option>
+            <option value="80">80</option>
+          </select>
+          <label style="font-size:12px;color:var(--text-muted);margin-left:12px">Layout:</label>
+          <select id="ner-sna-layout">
+            <option value="force" selected>Force-directed (default)</option>
+            <option value="circular">Circular</option>
+          </select>
+          <label style="font-size:12px;color:var(--text-muted);margin-left:12px">
+            <input type="checkbox" id="ner-sna-labels" checked /> Label semua node
+          </label>
+        </div>
+        <div id="chart-ner-sna" style="height:600px;background:#fafafa;border:1px solid #e5e7eb;border-radius:6px"></div>
+        <p style="font-size:11px;color:#9ca3af;margin-top:6px">
+          Tip: hover bubble → highlight koneksi langsung. Hover edge → lihat weight (count co-occurrence).
+        </p>
+      </div>
+
       <!-- 3. Portal diversity + Cross-platform rank diff -->
       <div class="grid-2" style="margin-top:14px">
         <div class="card">
@@ -2712,6 +2743,7 @@
       // 0. Temporal multi-line + spike density
       renderNERTemporal();
       renderNERSpikeDensity();
+      renderNERSNA();
 
       // 1. Canonical clusters
       const canonBody = document.querySelector('#ner-canon-table tbody');
@@ -2957,6 +2989,128 @@
         ],
       });
       window.addEventListener('resize', () => chart.resize());
+    }
+
+    // ====== NER SNA (Social Network Analysis) graph ======
+    const SNA_PALETTE = ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6',
+                          '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'];
+
+    function renderNERSNA() {
+      if (!NER_INSIGHTS) return;
+      const net = NER_INSIGHTS.network || {};
+      const rawNodes = net.nodes || [];
+      const rawEdges = net.edges || [];
+      if (!rawNodes.length) {
+        document.getElementById('chart-ner-sna').innerHTML =
+          '<div style="padding:60px;text-align:center;color:#9ca3af">Tidak ada network data</div>';
+        return;
+      }
+
+      const topnEl = document.getElementById('ner-sna-topn');
+      const layoutEl = document.getElementById('ner-sna-layout');
+      const labelsEl = document.getElementById('ner-sna-labels');
+
+      const renderInner = () => {
+        const topN = parseInt(topnEl?.value || '50', 10);
+        const layout = layoutEl?.value || 'force';
+        const showAllLabels = labelsEl?.checked ?? true;
+
+        // Take top N nodes by weighted degree
+        const nodes = rawNodes.slice(0, topN);
+        const nodeIds = new Set(nodes.map(n => n.id));
+        // Keep only edges whose both endpoints are in topN
+        const edges = rawEdges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
+
+        // Compute scaled sizes
+        const maxDeg = Math.max(1, ...nodes.map(n => n.weightedDegree));
+        const minDeg = Math.min(...nodes.map(n => n.weightedDegree));
+        const scaleNode = (d) => {
+          // Range 12..70 px
+          const t = (d - minDeg) / Math.max(1, maxDeg - minDeg);
+          return 12 + t * 58;
+        };
+        const maxEdgeW = Math.max(1, ...edges.map(e => e.weight));
+        const scaleEdge = (w) => {
+          // Range 0.5..6 px
+          const t = w / maxEdgeW;
+          return 0.5 + t * 5.5;
+        };
+
+        // ECharts node format
+        const echNodes = nodes.map(n => ({
+          id: n.id,
+          name: n.id,
+          symbolSize: scaleNode(n.weightedDegree),
+          value: n.weightedDegree,
+          category: n.community,
+          itemStyle: { color: SNA_PALETTE[n.community % SNA_PALETTE.length] },
+          label: {
+            show: showAllLabels || scaleNode(n.weightedDegree) >= 30,
+            fontSize: Math.max(10, Math.min(14, scaleNode(n.weightedDegree) / 3)),
+            color: '#1a1a1a',
+          },
+          tooltip: {
+            formatter: () => `<strong>${n.id}</strong><br/>weighted degree: ${fmt(n.weightedDegree)}<br/>community: C${n.community}`
+          },
+          // Layout fixed values only useful in circular — let force decide for others
+        }));
+        // Categories for legend
+        const commIds = [...new Set(nodes.map(n => n.community))].sort((a, b) => a - b);
+        const categories = commIds.map(c => ({
+          name: `C${c}`, itemStyle: { color: SNA_PALETTE[c % SNA_PALETTE.length] }
+        }));
+        const echEdges = edges.map(e => ({
+          source: e.source, target: e.target, value: e.weight,
+          lineStyle: { width: scaleEdge(e.weight), color: '#9ca3af', opacity: 0.55 + (e.weight / maxEdgeW) * 0.35 }
+        }));
+
+        const el = document.getElementById('chart-ner-sna');
+        const chart = echarts.init(el);
+        const option = {
+          tooltip: {
+            formatter: (p) => {
+              if (p.dataType === 'edge') {
+                return `<strong>${p.data.source}</strong> ⟷ <strong>${p.data.target}</strong><br/>co-occurrence: ${fmt(p.data.value)}`;
+              }
+              return `<strong>${p.data.name}</strong><br/>weighted degree: ${fmt(p.data.value)}<br/>community: C${p.data.category}`;
+            }
+          },
+          legend: [{ data: categories.map(c => c.name), top: 0, textStyle: { fontSize: 11 } }],
+          series: [{
+            type: 'graph',
+            layout: layout,
+            roam: true,
+            draggable: true,
+            data: echNodes,
+            links: echEdges,
+            categories: categories,
+            label: { show: true, position: 'right', formatter: '{b}' },
+            edgeSymbol: ['none', 'none'],
+            emphasis: {
+              focus: 'adjacency',
+              lineStyle: { width: 4, color: '#1f2937', opacity: 0.9 },
+              itemStyle: { borderColor: '#1f2937', borderWidth: 2 },
+              label: { fontSize: 13, fontWeight: 'bold' }
+            },
+            force: layout === 'force' ? {
+              repulsion: 220, gravity: 0.05, edgeLength: [50, 130], friction: 0.6,
+              layoutAnimation: true
+            } : undefined,
+            scaleLimit: { min: 0.4, max: 4 },
+          }],
+        };
+        chart.setOption(option, true);
+        window.addEventListener('resize', () => chart.resize());
+      };
+
+      // Bind controls
+      [topnEl, layoutEl, labelsEl].forEach(el => {
+        if (el && !el.dataset.bound) {
+          el.dataset.bound = '1';
+          el.addEventListener('change', renderInner);
+        }
+      });
+      renderInner();
     }
 
     // ====== Boot ======
