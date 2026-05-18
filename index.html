@@ -1810,6 +1810,17 @@
       </div>
 
       <div class="card" style="margin-top:14px">
+        <h3>💬 Contoh 10 kalimat HATE (high-confidence)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          10 kalimat top-confidence yang berlabel HATE di platform aktif. Filter: ≥30 char,
+          ≥4 kata, hashtag ratio &lt;40%, dedupe per author. <strong>Catatan</strong>:
+          model bisa over-eager (false positive pada bahasa kasar non-politis); spot-check
+          dengan konteks asli untuk verifikasi.
+        </p>
+        <div id="hate-samples"></div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
         <h3>👥 Top hate-flagged accounts (hate_rate ≥20%, n≥5)</h3>
         <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
           Akun dengan rasio HATE tinggi di platform aktif. <em>Operational watch list</em>.
@@ -5055,7 +5066,31 @@
       ].map(([k,v]) => `<div class="kpi"><div class="kpi-label">${k}</div><div class="kpi-value">${v}</div></div>`).join('');
       document.getElementById('hate-kpi-row').innerHTML = kpi;
       renderHateMonthly();
+      renderHateSamples();
       renderHateAccounts();
+    }
+
+    function renderHateSamples() {
+      const data = HATE.sources[HATE_STATE.source];
+      const samples = data.hate_samples || [];
+      const el = document.getElementById('hate-samples');
+      if (!samples.length) {
+        el.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:8px">Tidak ada sample memenuhi filter quality.</div>';
+        return;
+      }
+      el.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:8px">
+        ${samples.map((s, i) => `
+          <div style="background:#fef2f2;border:1px solid #fca5a5;border-left:4px solid #dc2626;border-radius:5px;padding:8px 10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:10px">
+              <span style="color:#dc2626;font-weight:bold">#${i + 1} HATE ${(s.score*100).toFixed(0)}%</span>
+              <span style="color:#9ca3af">${s.source_kind || '—'}${s.month ? ' · ' + s.month : ''}</span>
+            </div>
+            <div style="font-size:12px;color:#1f2937;line-height:1.4;margin-bottom:4px">${escapeHtml(s.text)}</div>
+            <div style="font-size:10px;color:#6b7280;font-family:monospace">@${escapeHtml(s.author || 'unknown')}</div>
+          </div>
+        `).join('')}
+        </div>`;
     }
 
     function renderHatePlatformBar() {
