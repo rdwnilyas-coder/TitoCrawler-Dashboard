@@ -1259,13 +1259,10 @@
         <h3>📈 Temporal event — timeline + lifecycle</h3>
         <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
           Mention bulanan top event (canonical) dari news + YouTube + 4 socmed (post-level).
-          Warna sesuai lifecycle class
-          (<span style="color:#16a34a">rising</span> /
-          <span style="color:#ea580c">peaked</span> /
-          <span style="color:#dc2626">fading</span> /
-          <span style="color:#6366f1">steady</span> /
-          <span style="color:#a1a1aa">one-hit</span>).
-          Ribbon bawah = total mention semua top event bulan tsb.
+          Tiap event punya warna unik. Lifecycle class
+          (<em>rising / peaked / fading / steady / one-hit / transient</em>)
+          tetap muncul di label legend dalam tanda kurung. Ribbon bawah =
+          total mention semua top event bulan tsb.
         </p>
         <div class="filters" style="margin-bottom:6px">
           <label style="font-size:12px;color:var(--text-muted)">Tampilkan:</label>
@@ -3442,6 +3439,14 @@
     }
 
     // ====== NER Event temporal (monthly timeline per event + ribbon total) ======
+    // Wide categorical palette — distinct hues, suitable for up to ~16 events.
+    const EVENT_PALETTE = [
+      '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+      '#8c564b', '#e377c2', '#17becf', '#bcbd22', '#7f7f7f',
+      '#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
+      '#42d4f4',
+    ];
+
     function renderNEREventTemporal() {
       if (!NER_INSIGHTS) return;
       const et = NER_INSIGHTS.eventTemporal || {};
@@ -3473,15 +3478,16 @@
         const monthSet = new Set();
         pool.forEach(e => (e.timeline || []).forEach(t => monthSet.add(t.month)));
         const months = Array.from(monthSet).sort();
-        const series = pool.map(e => {
+        const series = pool.map((e, i) => {
           const tl = Object.fromEntries((e.timeline || []).map(t => [t.month, t.count]));
           const data = months.map(m => tl[m] || 0);
-          const color = LIFECYCLE_COLORS[e.class] || '#6b7280';
+          // Unique color per event (categorical), independent of lifecycle class.
+          const color = EVENT_PALETTE[i % EVENT_PALETTE.length];
           return {
             name: `${e.event} (${e.class})`,
             type: 'line', smooth: true, data,
             stack: stacked ? 'evt' : undefined,
-            areaStyle: stacked ? { opacity: 0.45 } : undefined,
+            areaStyle: stacked ? { color, opacity: 0.35 } : undefined,
             symbolSize: 4,
             lineStyle: { color, width: 2 }, itemStyle: { color },
             emphasis: { focus: 'series' },
