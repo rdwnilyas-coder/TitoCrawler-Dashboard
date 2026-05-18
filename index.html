@@ -1604,7 +1604,13 @@
           Bar chart distribusi topik (dari LDA topic modeling) untuk top 6 komunitas terbesar.
           Komunitas yang spike di 1 topik = potensi echo chamber.
         </p>
-        <div id="chart-snasm-topic-dist" style="height:340px"></div>
+        <div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:start">
+          <div id="chart-snasm-topic-dist" style="height:340px"></div>
+          <div>
+            <div style="font-size:12px;font-weight:bold;color:#374151;margin-bottom:6px">📖 Topik referensi (platform aktif)</div>
+            <ul id="snasm-topic-legend" style="list-style:none;padding:0;margin:0;font-size:12px;max-height:320px;overflow-y:auto"></ul>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -4270,6 +4276,9 @@
 
     async function renderSNASocmed() {
       SNA_SOCMED = await loadData('sna_socmed');
+      // Also eager-load topic_resume so the topic legend works even if the user
+      // hasn't opened the Topic Modelling tab yet.
+      if (!TOPIC) TOPIC = await loadData('topic_resume');
       if (!SNA_SOCMED || !SNA_SOCMED.platforms) {
         document.getElementById('tab-sna-socmed').innerHTML =
           '<div class="card"><h3>SNA data belum di-generate</h3>' +
@@ -4419,19 +4428,26 @@
       const src = SNASM_STATE.source;
       const comms = (SNA_SOCMED.platforms[src].communities || []).slice(0, 6);
       const el = document.getElementById('chart-snasm-topic-dist');
-      if (!comms.length) { el.innerHTML = ''; return; }
-      // Pull topic labels from TOPIC if available
-      const topicLabels = {};
+      const legendEl = document.getElementById('snasm-topic-legend');
+      if (!comms.length) { el.innerHTML = ''; if (legendEl) legendEl.innerHTML = ''; return; }
+
+      // Build topic-id → {label, share} lookup from TOPIC.sources[src]
+      const topicMeta = {};
       if (TOPIC && TOPIC.sources && TOPIC.sources[src]) {
         for (const t of (TOPIC.sources[src].topics || [])) {
-          topicLabels[String(t.id)] = `T${t.id} ${t.label_auto}`;
+          topicMeta[String(t.id)] = { label: t.label_auto, share: t.share, id: t.id };
         }
       }
-      // All topic ids across the top communities (for x axis)
-      const tidSet = new Set();
-      comms.forEach(c => Object.keys(c.topic_dist || {}).forEach(t => tidSet.add(t)));
-      const tids = [...tidSet].sort((a, b) => parseInt(a) - parseInt(b));
-      const xLabels = tids.map(t => topicLabels[t] || `T${t}`);
+
+      // X-axis: ALL topics of this platform (not just those in top communities)
+      // sorted by id, so reference list and chart order match.
+      const allTids = Object.keys(topicMeta).sort((a, b) => parseInt(a) - parseInt(b));
+      // Fallback if TOPIC isn't loaded yet — use whatever topics appear in comms
+      const fallbackSet = new Set();
+      comms.forEach(c => Object.keys(c.topic_dist || {}).forEach(t => fallbackSet.add(t)));
+      const tids = allTids.length ? allTids : [...fallbackSet].sort((a, b) => parseInt(a) - parseInt(b));
+      const xLabels = tids.map(t => `T${t}`);
+
       const series = comms.map(c => {
         const total = Object.values(c.topic_dist || {}).reduce((a, b) => a + b, 0) || 1;
         const data = tids.map(t => Math.round(((c.topic_dist || {})[t] || 0) / total * 1000) / 10);
@@ -4440,14 +4456,43 @@
       });
       const chart = echarts.init(el);
       chart.setOption({
-        tooltip: { trigger: 'axis', formatter: ps => ps.map(p => `${p.marker} <strong>${p.seriesName}</strong>: ${p.value}%`).join('<br/>') },
+        tooltip: { trigger: 'axis', formatter: ps => {
+          // Show topic label in tooltip header
+          const idx = ps[0].dataIndex;
+          const tid = tids[idx];
+          const meta = topicMeta[tid];
+          const head = meta ? `<strong>T${tid}</strong> ${meta.label}` : `<strong>T${tid}</strong>`;
+          return head + '<br/>' + ps.map(p => `${p.marker} ${p.seriesName}: <strong>${p.value}%</strong>`).join('<br/>');
+        }},
         legend: { type: 'scroll', top: 0, textStyle: { fontSize: 10 } },
-        grid: { left: 8, right: 24, top: 40, bottom: 60, containLabel: true },
-        xAxis: { type: 'category', data: xLabels, axisLabel: { rotate: 30, fontSize: 9, interval: 0 } },
+        grid: { left: 8, right: 12, top: 40, bottom: 32, containLabel: true },
+        xAxis: { type: 'category', data: xLabels, axisLabel: { fontSize: 11, fontWeight: 'bold' } },
         yAxis: { type: 'value', name: '% docs', axisLabel: { fontSize: 10 } },
         series,
       }, true);
       window.addEventListener('resize', () => chart.resize());
+
+      // Topic reference list (right panel)
+      if (legendEl) {
+        if (!allTids.length) {
+          legendEl.innerHTML = '<li style="color:#9ca3af;padding:6px 0">Topic labels belum tersedia (topic_resume.json belum di-load — buka tab Topic Modelling sekali).</li>';
+        } else {
+          legendEl.innerHTML = allTids.map(t => {
+            const meta = topicMeta[t];
+            // Use TOPIC_PALETTE if loaded (matches Topic Modelling tab colors);
+            // fall back to SNA_PALETTE so colors are always shown.
+            const color = (typeof TOPIC_PALETTE !== 'undefined')
+              ? TOPIC_PALETTE[parseInt(t) % TOPIC_PALETTE.length]
+              : SNA_PALETTE[parseInt(t) % SNA_PALETTE.length];
+            const sharePct = meta && meta.share !== undefined ? `<span style="color:#9ca3af;font-size:10px;float:right">${(meta.share * 100).toFixed(1)}%</span>` : '';
+            return `<li style="display:block;padding:4px 4px;border-bottom:1px solid #f3f4f6">
+              <span style="display:inline-block;width:14px;height:14px;background:${color};border-radius:3px;vertical-align:middle;margin-right:6px"></span>
+              <strong>T${t}</strong> <span style="color:#374151">${meta ? meta.label : '(label not loaded)'}</span>
+              ${sharePct}
+            </li>`;
+          }).join('');
+        }
+      }
     }
 
     // ====== Boot ======
