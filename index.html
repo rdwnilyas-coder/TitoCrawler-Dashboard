@@ -1683,12 +1683,12 @@
 
       <!-- Sample sentences per label (5 each) -->
       <div class="card" style="margin-top:14px">
-        <h3>💬 Sample kalimat per label (5 highest-confidence)</h3>
+        <h3>💬 Sample kalimat per label (curated, accurate only)</h3>
         <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
-          Per platform: 5 kalimat dengan confidence tertinggi untuk masing-masing label
-          (positive / neutral / negative). Filter: ≥40 char, ≥5 kata, hashtag ratio &lt;35%,
-          dedupe per doc. Berguna untuk <em>spot-check</em> klasifikasi model dan operational
-          context.
+          Per platform: kalimat high-confidence per label (positive / neutral / negative)
+          yang sudah <strong>diverifikasi manual</strong> (false positive/negative model
+          disaring). Target 5 per kategori — kalau kurang artinya kandidat top-confidence
+          didominasi mis-klasifikasi.
         </p>
         <div id="sentiment-samples" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px"></div>
       </div>
@@ -1810,12 +1810,13 @@
       </div>
 
       <div class="card" style="margin-top:14px">
-        <h3>💬 Contoh 10 kalimat HATE (high-confidence)</h3>
+        <h3>💬 Contoh kalimat HATE (curated, verified)</h3>
         <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
-          10 kalimat top-confidence yang berlabel HATE di platform aktif. Filter: ≥30 char,
-          ≥4 kata, hashtag ratio &lt;40%, dedupe per author. <strong>Catatan</strong>:
-          model bisa over-eager (false positive pada bahasa kasar non-politis); spot-check
-          dengan konteks asli untuk verifikasi.
+          Kalimat berlabel HATE yang sudah <strong>diverifikasi manual</strong> (false positive
+          model disaring). Target 10 per platform — kalau jauh kurang, model
+          banyak over-flag di platform itu. Khusus IG/TT: model off-the-shelf sering FP pada
+          komentar yang sebenarnya supportive/netral. Untuk produksi ops, perlu fine-tune
+          atau LLM verification.
         </p>
         <div id="hate-samples"></div>
       </div>
