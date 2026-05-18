@@ -315,6 +315,7 @@
     <button data-tab="articles">📄 Articles</button>
     <button data-tab="ner">🏷️ Analisis NER</button>
     <button data-tab="topic">🧩 Topic Modelling</button>
+    <button data-tab="sna-socmed">📡 SNA Sosmed</button>
     <button data-tab="youtube">🎥 YouTube</button>
     <button data-tab="yt-comments">💬 YT Comments</button>
     <button data-tab="tiktok">🎵 TikTok</button>
@@ -1532,6 +1533,80 @@
         </div>
       </div>
     </section>
+
+    <!-- Tab: SNA Sosmed — echo chamber detection per platform -->
+    <section class="tab-content" id="tab-sna-socmed">
+      <div class="card" style="margin-bottom:14px">
+        <h3 id="snasm-title">📡 SNA Sosmed — pemetaan akun + echo chamber</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Network akun↔akun berdasarkan <strong>reply edges</strong> + <strong>@mention</strong> (Twitter saja).
+          Komunitas dideteksi via Louvain (random_state=42).
+          <strong>Echo chamber</strong> diukur dengan dua metrik side-by-side:
+          (1) <em>Focus score</em> = 1 - normalized topic entropy (1=fokus topik tertentu),
+          (2) <em>Insular score</em> = E-I index dinormalisasi (1=insular, 0=bridging).
+          Sumber: hanya 2 platform dengan struktur data cukup kuat (YouTube reply tree + Twitter conversation graph).
+        </p>
+        <div id="snasm-kpi-row" class="kpi-row" style="margin-top:10px"></div>
+      </div>
+
+      <div class="filters" style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text-muted)"><strong>Pilih platform:</strong></label>
+        <select id="snasm-source">
+          <option value="youtube" selected>🎥 YouTube (reply-tree, 222k komentar)</option>
+          <option value="twitter">🐦 Twitter (conversation + @mention, 24k posts/replies)</option>
+        </select>
+        <label style="font-size:12px;color:var(--text-muted);margin-left:14px">Top N nodes:</label>
+        <select id="snasm-topn">
+          <option value="80">80</option>
+          <option value="150" selected>150</option>
+          <option value="250">250</option>
+        </select>
+        <label style="font-size:12px;color:var(--text-muted);margin-left:14px">
+          <input type="checkbox" id="snasm-labels" checked /> Label nodes
+        </label>
+      </div>
+
+      <!-- Force-directed graph -->
+      <div class="card">
+        <h3>🕸️ Network akun (community-colored)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Node = akun. Ukuran = weighted degree (kekuatan koneksi). Warna = komunitas Louvain.
+          Drag untuk geser, scroll untuk zoom. Hover edge untuk lihat weight.
+        </p>
+        <div id="chart-snasm-graph" style="height:600px;background:#fafafa;border:1px solid #e5e7eb;border-radius:6px"></div>
+      </div>
+
+      <!-- Community table + EC metrics -->
+      <div class="card" style="margin-top:14px">
+        <h3>📋 Communities + echo chamber scores</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          <strong>Focus</strong> tinggi + <strong>Insular</strong> tinggi = echo chamber kuat (akun fokus pada topik
+          spesifik + jarang interaksi keluar). <strong>EC composite</strong> = bobot 50/50 dari kedua skor, dikalikan
+          factor ukuran komunitas (komunitas terlalu kecil di-suppress).
+          Klik baris untuk highlight di graph.
+        </p>
+        <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
+          <table class="articles" id="snasm-comm-table">
+            <thead><tr>
+              <th>C</th><th>Size</th><th>Intra</th><th>Inter</th>
+              <th>E-I</th><th>Focus</th><th>Insular</th><th>EC</th>
+              <th>Dom topic</th><th>Topic entropy</th><th>Top accounts</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Topic distribution per community -->
+      <div class="card" style="margin-top:14px">
+        <h3>🧩 Topic distribution per community (top 6)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Bar chart distribusi topik (dari LDA topic modeling) untuk top 6 komunitas terbesar.
+          Komunitas yang spike di 1 topik = potensi echo chamber.
+        </p>
+        <div id="chart-snasm-topic-dist" style="height:340px"></div>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -1634,7 +1709,7 @@
 
     // ====== Tab navigation ======
     const tabsRendered = { overview: false, reporters: false, articles: false,
-                           ner: false, topic: false,
+                           ner: false, topic: false, 'sna-socmed': false,
                            youtube: false, 'yt-comments': false,
                            tiktok: false, 'tt-comments': false,
                            instagram: false, 'ig-comments': false,
@@ -1661,6 +1736,7 @@
         if (name === 'fb-comments') await renderFacebookComments();
         if (name === 'ner') await renderNER();
         if (name === 'topic') await renderTopic();
+        if (name === 'sna-socmed') await renderSNASocmed();
         tabsRendered[name] = true;
       }
       // Resize charts after tab shown (ECharts needs visible container)
@@ -4186,6 +4262,192 @@
           <td style="font-size:12px;color:${leaderColor}"><strong>${p.leader}</strong></td>
         </tr>`;
       }).join('');
+    }
+
+    // ====== SNA Sosmed ======
+    let SNA_SOCMED = null;
+    const SNASM_STATE = { source: 'youtube' };
+
+    async function renderSNASocmed() {
+      SNA_SOCMED = await loadData('sna_socmed');
+      if (!SNA_SOCMED || !SNA_SOCMED.platforms) {
+        document.getElementById('tab-sna-socmed').innerHTML =
+          '<div class="card"><h3>SNA data belum di-generate</h3>' +
+          '<p>Run <code>python analysis/code/analyze_sna_socmed.py</code></p></div>';
+        return;
+      }
+      const sel = document.getElementById('snasm-source');
+      const topnEl = document.getElementById('snasm-topn');
+      const labelsEl = document.getElementById('snasm-labels');
+      const bind = (el, fn) => { if (el && !el.dataset.bound) { el.dataset.bound = '1'; el.addEventListener('change', fn); } };
+      bind(sel,    () => renderSNASMPlatform(sel.value));
+      bind(topnEl, () => renderSNASMGraph());
+      bind(labelsEl, () => renderSNASMGraph());
+      renderSNASMPlatform(sel ? sel.value : 'youtube');
+    }
+
+    function renderSNASMPlatform(src) {
+      SNASM_STATE.source = src;
+      const p = SNA_SOCMED.platforms[src];
+      if (!p) return;
+      const m = p.meta;
+      document.getElementById('snasm-title').textContent =
+        `📡 SNA Sosmed — ${src === 'youtube' ? '🎥 YouTube' : '🐦 Twitter'}`;
+      const kpi = [
+        ['Platform', src],
+        ['Total akun', fmt(m.nodes_total)],
+        ['Total edges', fmt(m.edges_total)],
+        ['Communities', fmt(m.communities_total)],
+        ['Modularity Q', m.modularity_Q.toFixed(3)],
+        ['Topics', m.n_topics],
+      ].map(([k, v]) => `<div class="kpi"><div class="kpi-label">${k}</div><div class="kpi-value">${v}</div></div>`).join('');
+      document.getElementById('snasm-kpi-row').innerHTML = kpi;
+      renderSNASMGraph();
+      renderSNASMCommTable();
+      renderSNASMTopicDist();
+    }
+
+    function renderSNASMGraph() {
+      const src = SNASM_STATE.source;
+      const p = SNA_SOCMED.platforms[src];
+      const topN = parseInt(document.getElementById('snasm-topn')?.value || '150', 10);
+      const showLabels = document.getElementById('snasm-labels')?.checked ?? true;
+      const rawNodes = (p.graph.nodes || []).slice(0, topN);
+      const nodeIds = new Set(rawNodes.map(n => n.id));
+      const edges = (p.graph.edges || []).filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
+
+      const maxDeg = Math.max(1, ...rawNodes.map(n => n.weighted_degree));
+      const minDeg = Math.min(...rawNodes.map(n => n.weighted_degree));
+      const sizeOf = d => 8 + ((d - minDeg) / Math.max(1, maxDeg - minDeg)) * 38;
+      const maxW = Math.max(1, ...edges.map(e => e.weight));
+
+      // Build community lookup for color
+      const commScores = Object.fromEntries((p.communities || []).map(c => [c.id, c]));
+      const echNodes = rawNodes.map(n => {
+        const cscore = commScores[n.community];
+        const color = SNA_PALETTE[n.community % SNA_PALETTE.length];
+        return {
+          id: n.id, name: n.id,
+          symbolSize: sizeOf(n.weighted_degree),
+          value: n.weighted_degree,
+          category: n.community,
+          itemStyle: { color },
+          label: {
+            show: showLabels && sizeOf(n.weighted_degree) >= 18,
+            fontSize: Math.max(9, Math.min(12, sizeOf(n.weighted_degree) / 4)),
+            color: '#1a1a1a',
+          },
+          activity: n.activity,
+          ecScore: cscore ? cscore.echo_chamber_score : 0,
+          focus: cscore ? cscore.focus_score : 0,
+          insular: cscore ? cscore.insular_score : 0,
+        };
+      });
+      const commIds = [...new Set(rawNodes.map(n => n.community))].sort((a, b) => a - b);
+      const categories = commIds.map(c => ({
+        name: `C${c}`,
+        itemStyle: { color: SNA_PALETTE[c % SNA_PALETTE.length] },
+      }));
+      const echEdges = edges.map(e => ({
+        source: e.source, target: e.target, value: e.weight,
+        lineStyle: { width: 0.5 + (e.weight / maxW) * 4.5, color: '#9ca3af', opacity: 0.4 + (e.weight / maxW) * 0.4 },
+      }));
+
+      const el = document.getElementById('chart-snasm-graph');
+      const chart = echarts.init(el);
+      chart.setOption({
+        tooltip: {
+          formatter: (pp) => {
+            if (pp.dataType === 'edge') {
+              return `<strong>${pp.data.source}</strong> ⟷ <strong>${pp.data.target}</strong><br/>weight: ${fmt(pp.data.value)}`;
+            }
+            return `<strong>${pp.data.name}</strong><br/>` +
+              `community: C${pp.data.category} (EC=${pp.data.ecScore}, focus=${pp.data.focus}, insular=${pp.data.insular})<br/>` +
+              `weighted degree: ${fmt(pp.data.value)} · activity: ${fmt(pp.data.activity)}`;
+          }
+        },
+        legend: [{ data: categories.map(c => c.name), top: 0, textStyle: { fontSize: 11 } }],
+        series: [{
+          type: 'graph', layout: 'force', roam: true, draggable: true,
+          data: echNodes, links: echEdges, categories,
+          label: { show: true, position: 'right' },
+          edgeSymbol: ['none', 'none'],
+          emphasis: {
+            focus: 'adjacency',
+            lineStyle: { width: 4, color: '#1f2937', opacity: 0.9 },
+            itemStyle: { borderColor: '#1f2937', borderWidth: 2 },
+            label: { fontSize: 13, fontWeight: 'bold' },
+          },
+          force: { repulsion: 220, gravity: 0.05, edgeLength: [50, 130], friction: 0.6, layoutAnimation: true },
+          scaleLimit: { min: 0.4, max: 4 },
+        }],
+      }, true);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderSNASMCommTable() {
+      const src = SNASM_STATE.source;
+      const comms = (SNA_SOCMED.platforms[src].communities || []).slice(0, 30);
+      const tbody = document.querySelector('#snasm-comm-table tbody');
+      if (!comms.length) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#9ca3af">No communities</td></tr>';
+        return;
+      }
+      const ecColor = (v) => v >= 0.45 ? '#dc2626' : (v >= 0.35 ? '#ea580c' : (v >= 0.25 ? '#facc15' : '#9ca3af'));
+      tbody.innerHTML = comms.map(c => {
+        const color = SNA_PALETTE[c.id % SNA_PALETTE.length];
+        const tops = (c.top_accounts || []).slice(0, 4).map(a =>
+          `<span style="display:inline-block;font-size:11px;color:#374151;background:#f3f4f6;padding:1px 5px;border-radius:3px;margin:1px 2px 1px 0">${a.author}<sup style="color:#9ca3af">${a.activity}</sup></span>`
+        ).join('');
+        return `<tr>
+          <td><span style="display:inline-block;width:12px;height:12px;background:${color};border-radius:2px;vertical-align:middle"></span> C${c.id}</td>
+          <td style="text-align:right">${c.size}</td>
+          <td style="text-align:right;color:#16a34a">${c.intra_edges}</td>
+          <td style="text-align:right;color:#9ca3af">${c.inter_edges}</td>
+          <td style="text-align:right;font-family:monospace;color:${c.ei_index < -0.2 ? '#dc2626' : (c.ei_index < 0 ? '#ea580c' : '#16a34a')}">${c.ei_index.toFixed(2)}</td>
+          <td style="text-align:right">${c.focus_score.toFixed(2)}</td>
+          <td style="text-align:right">${c.insular_score.toFixed(2)}</td>
+          <td style="text-align:right;font-weight:bold;color:${ecColor(c.echo_chamber_score)}">${c.echo_chamber_score.toFixed(2)}</td>
+          <td>T${c.dominant_topic ?? '—'} <span style="color:#9ca3af;font-size:11px">(${(c.dominant_topic_share*100).toFixed(0)}%)</span></td>
+          <td style="text-align:right;color:#6b7280">${c.topic_entropy.toFixed(2)}</td>
+          <td>${tops}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderSNASMTopicDist() {
+      const src = SNASM_STATE.source;
+      const comms = (SNA_SOCMED.platforms[src].communities || []).slice(0, 6);
+      const el = document.getElementById('chart-snasm-topic-dist');
+      if (!comms.length) { el.innerHTML = ''; return; }
+      // Pull topic labels from TOPIC if available
+      const topicLabels = {};
+      if (TOPIC && TOPIC.sources && TOPIC.sources[src]) {
+        for (const t of (TOPIC.sources[src].topics || [])) {
+          topicLabels[String(t.id)] = `T${t.id} ${t.label_auto}`;
+        }
+      }
+      // All topic ids across the top communities (for x axis)
+      const tidSet = new Set();
+      comms.forEach(c => Object.keys(c.topic_dist || {}).forEach(t => tidSet.add(t)));
+      const tids = [...tidSet].sort((a, b) => parseInt(a) - parseInt(b));
+      const xLabels = tids.map(t => topicLabels[t] || `T${t}`);
+      const series = comms.map(c => {
+        const total = Object.values(c.topic_dist || {}).reduce((a, b) => a + b, 0) || 1;
+        const data = tids.map(t => Math.round(((c.topic_dist || {})[t] || 0) / total * 1000) / 10);
+        const color = SNA_PALETTE[c.id % SNA_PALETTE.length];
+        return { name: `C${c.id} (n=${c.size}, EC=${c.echo_chamber_score})`, type: 'bar', data, itemStyle: { color } };
+      });
+      const chart = echarts.init(el);
+      chart.setOption({
+        tooltip: { trigger: 'axis', formatter: ps => ps.map(p => `${p.marker} <strong>${p.seriesName}</strong>: ${p.value}%`).join('<br/>') },
+        legend: { type: 'scroll', top: 0, textStyle: { fontSize: 10 } },
+        grid: { left: 8, right: 24, top: 40, bottom: 60, containLabel: true },
+        xAxis: { type: 'category', data: xLabels, axisLabel: { rotate: 30, fontSize: 9, interval: 0 } },
+        yAxis: { type: 'value', name: '% docs', axisLabel: { fontSize: 10 } },
+        series,
+      }, true);
+      window.addEventListener('resize', () => chart.resize());
     }
 
     // ====== Boot ======
