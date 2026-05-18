@@ -313,6 +313,7 @@
     <button class="active" data-tab="overview">📰 Portal</button>
     <button data-tab="reporters">👥 Reporters &amp; Tags</button>
     <button data-tab="articles">📄 Articles</button>
+    <button data-tab="ner">🏷️ NER</button>
     <button data-tab="youtube">🎥 YouTube</button>
     <button data-tab="yt-comments">💬 YT Comments</button>
     <button data-tab="tiktok">🎵 TikTok</button>
@@ -330,6 +331,7 @@
       <option value="overview">📰 Portal</option>
       <option value="reporters">👥 Reporters &amp; Tags</option>
       <option value="articles">📄 Articles</option>
+      <option value="ner">🏷️ NER</option>
       <option value="youtube">🎥 YouTube</option>
       <option value="yt-comments">💬 YT Comments</option>
       <option value="tiktok">🎵 TikTok</option>
@@ -947,6 +949,118 @@
       </div>
       <div class="pagination" id="pagination"></div>
     </section>
+
+    <!-- Tab: NER (Named Entity Recognition) -->
+    <section class="tab-content" id="tab-ner">
+      <div class="card" style="margin-bottom:14px">
+        <h3>🏷️ Entitas hasil NER lintas 6 sumber</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Model: <code>cahya/bert-base-indonesian-NER</code>. Filter: entitas ≥3 karakter,
+          type NOR di-hide di chart (tetap ada di stat). Tipe ditampilkan: PER, ORG, GPE, LOC, LAW, MON, EVT.
+        </p>
+        <div id="ner-kpi-row" class="kpi-row" style="margin-top:10px"></div>
+      </div>
+
+      <div class="filters" style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text-muted)">Filter sumber:</label>
+        <select id="ner-source-filter">
+          <option value="all">Semua sumber (gabungan)</option>
+          <option value="news">📰 News (21 portal)</option>
+          <option value="youtube">🎥 YouTube</option>
+          <option value="twitter">🐦 Twitter</option>
+          <option value="tiktok">🎵 TikTok</option>
+          <option value="instagram">📷 Instagram</option>
+          <option value="facebook">📘 Facebook</option>
+        </select>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Top 20 — PER (orang)</h3>
+          <div class="chart chart-tall" id="chart-ner-per"></div>
+        </div>
+        <div class="card">
+          <h3>Top 20 — ORG (lembaga)</h3>
+          <div class="chart chart-tall" id="chart-ner-org"></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <h3>Top 20 — GPE (kota/provinsi/negara)</h3>
+          <div class="chart chart-tall" id="chart-ner-gpe"></div>
+        </div>
+        <div class="card">
+          <h3>Top 20 — LAW (regulasi/pasal)</h3>
+          <div class="chart chart-tall" id="chart-ner-law"></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <h3>Top 20 — MON (anggaran/biaya)</h3>
+          <div class="chart chart-tall" id="chart-ner-mon"></div>
+        </div>
+        <div class="card">
+          <h3>Top 20 — EVT (event)</h3>
+          <div class="chart chart-tall" id="chart-ner-evt"></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <h3>Distribusi tipe entitas (gabungan)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Sebelum filter NOR.
+          </p>
+          <div class="chart" id="chart-ner-types"></div>
+        </div>
+        <div class="card">
+          <h3>Entitas per sumber</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Total entitas yang ter-ekstrak per platform.
+          </p>
+          <div class="chart" id="chart-ner-per-source"></div>
+        </div>
+      </div>
+
+      <div class="grid-row-1" style="margin-top:14px">
+        <div class="card">
+          <h3>Trend bulanan — top 5 PER per bulan (gabungan)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Garis = mention bulanan dari 5 tokoh teratas keseluruhan.
+          </p>
+          <div class="chart chart-tall" id="chart-ner-monthly"></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <h3>Co-occurrence pair (top 20)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Pasangan PER yang sering muncul bareng di dokumen yang sama.
+          </p>
+          <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
+            <table class="articles" id="ner-cooc-table">
+              <thead><tr><th>#</th><th>Entitas A</th><th>Entitas B</th><th style="text-align:right">Count</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Top PER per portal news (top 10/portal)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Sumber: news 21 portal. Mana portal yang punya angle berbeda.
+          </p>
+          <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
+            <table class="articles" id="ner-portal-per-table">
+              <thead><tr><th>Portal</th><th>Top PER</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -1049,6 +1163,7 @@
 
     // ====== Tab navigation ======
     const tabsRendered = { overview: false, reporters: false, articles: false,
+                           ner: false,
                            youtube: false, 'yt-comments': false,
                            tiktok: false, 'tt-comments': false,
                            instagram: false, 'ig-comments': false,
@@ -1073,6 +1188,7 @@
         if (name === 'tw-comments') await renderTwitterComments();
         if (name === 'facebook') await renderFacebook();
         if (name === 'fb-comments') await renderFacebookComments();
+        if (name === 'ner') await renderNER();
         tabsRendered[name] = true;
       }
       // Resize charts after tab shown (ECharts needs visible container)
@@ -2196,6 +2312,197 @@
       _horizontalBar('#fbc-chart-top-commenters', FBC.topCommenters.slice(0, 20),
         'comments', 'author', '#a1a1aa',
         (p) => `<strong>${p.name}</strong><br/>${fmt(p.value)} komentar`);
+    }
+
+    // ====== NER Tab ======
+    let NER = null;
+    let NER_SOURCE = 'all';
+    const NER_BAR_COLOR = '#a1a1aa';
+    const NER_FOCAL = '#dc2626';
+    const NER_AMBER = '#f59e0b';
+    const NER_SRC_COLORS = {
+      news: '#1f77b4', youtube: '#dc2626', twitter: '#0ea5e9',
+      tiktok: '#000000', instagram: '#a855f7', facebook: '#1d4ed8'
+    };
+
+    async function renderNER() {
+      NER = await loadData('ner_resume');
+      if (!NER) {
+        document.getElementById('tab-ner').innerHTML =
+          '<div class="card"><h3>NER resume belum di-generate</h3><p>Run <code>python analysis/code/build_ner_resume.py</code></p></div>';
+        return;
+      }
+      // Bind source filter
+      const sel = document.getElementById('ner-source-filter');
+      sel.addEventListener('change', (e) => {
+        NER_SOURCE = e.target.value;
+        renderNERCharts();
+      });
+      renderNERCharts();
+    }
+
+    function _nerFilterCount(entry) {
+      // entry: {text, count, perSource: {news:..., youtube:..., ...}}
+      if (NER_SOURCE === 'all') return entry.count;
+      return (entry.perSource || {})[NER_SOURCE] || 0;
+    }
+
+    function _nerTopOfType(etype, n) {
+      const arr = (NER.topByType || {})[etype] || [];
+      const scored = arr.map(e => ({ text: e.text, value: _nerFilterCount(e) }))
+                        .filter(e => e.value > 0);
+      scored.sort((a, b) => b.value - a.value);
+      return scored.slice(0, n);
+    }
+
+    function _nerHorizBar(elSel, etype) {
+      const el = document.querySelector(elSel);
+      if (!el) return;
+      const data = _nerTopOfType(etype, 20).reverse(); // ECharts displays bottom-to-top
+      if (!data.length) {
+        el.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:40px 0">Tidak ada data ${etype} di sumber ini</div>`;
+        return;
+      }
+      const chart = echarts.init(el);
+      const top3 = data.slice(-3).map(d => d.text);
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                   formatter: (p) => `<strong>${p[0].name}</strong><br/>${fmt(p[0].value)} mention` },
+        grid: { left: 8, right: 32, top: 8, bottom: 8, containLabel: true },
+        xAxis: { type: 'value', axisLabel: { color: '#6b7280', fontSize: 10 } },
+        yAxis: { type: 'category', data: data.map(d => d.text),
+                 axisLabel: { color: '#1a1a1a', fontSize: 11 } },
+        series: [{
+          type: 'bar', data: data.map(d => ({
+            value: d.value,
+            itemStyle: { color: top3.includes(d.text) ? NER_AMBER : NER_BAR_COLOR }
+          })),
+          label: { show: true, position: 'right', fontSize: 10, color: '#374151',
+                   formatter: (p) => fmt(p.value) }
+        }]
+      });
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderNERCharts() {
+      // KPI row
+      const ps = NER.perSource || {};
+      const totalEnt = NER.meta.totalEntities || 0;
+      const nSources = (NER.meta.sources || []).length;
+      const topPer = (NER.topByType.PER || [])[0];
+      const topPerLabel = topPer ? `${topPer.text} (${fmt(topPer.count)})` : '—';
+      // Find peak month
+      const months = Object.keys(NER.monthlyTopPersons || {}).sort();
+      let peakMonth = '—', peakCount = 0;
+      months.forEach(m => {
+        const c = (NER.monthlyTopPersons[m][0] || {}).count || 0;
+        if (c > peakCount) { peakCount = c; peakMonth = m; }
+      });
+      document.getElementById('ner-kpi-row').innerHTML = `
+        <div class="kpi-card"><div class="label">Total entitas (filtered)</div><div class="value">${fmt(totalEnt)}</div></div>
+        <div class="kpi-card"><div class="label">Sumber</div><div class="value">${nSources}</div></div>
+        <div class="kpi-card"><div class="label">Top PER</div><div class="value" style="font-size:18px">${topPerLabel}</div></div>
+        <div class="kpi-card"><div class="label">Bulan peak (PER #1)</div><div class="value" style="font-size:18px">${peakMonth} · ${fmt(peakCount)}</div></div>
+      `;
+
+      // Per-type bars
+      _nerHorizBar('#chart-ner-per', 'PER');
+      _nerHorizBar('#chart-ner-org', 'ORG');
+      _nerHorizBar('#chart-ner-gpe', 'GPE');
+      _nerHorizBar('#chart-ner-law', 'LAW');
+      _nerHorizBar('#chart-ner-mon', 'MON');
+      _nerHorizBar('#chart-ner-evt', 'EVT');
+
+      // Type distribution donut (entire counts incl NOR — informational)
+      const tc = NER.typeCounts.overall || {};
+      const typeArr = Object.entries(tc).map(([k, v]) => ({ name: k, value: v }))
+                          .sort((a, b) => b.value - a.value);
+      const totalTC = typeArr.reduce((s, x) => s + x.value, 0);
+      const focalIdx = 0;
+      const elD = document.getElementById('chart-ner-types');
+      const cD = echarts.init(elD);
+      cD.setOption({
+        tooltip: { trigger: 'item', formatter: (p) =>
+          `${p.name}: ${fmt(p.value)} (${(p.value / totalTC * 100).toFixed(1)}%)` },
+        legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 10 } },
+        series: [{
+          type: 'pie', radius: ['45%', '70%'], center: ['50%', '45%'],
+          data: typeArr.map((d, i) => ({ ...d,
+            itemStyle: { color: i === focalIdx ? NER_FOCAL : `hsl(${i*37 % 360},35%,${55+i%3*5}%)` }
+          })),
+          label: { fontSize: 10 }
+        }]
+      });
+      window.addEventListener('resize', () => cD.resize());
+
+      // Per-source bar
+      const psArr = Object.entries(ps).map(([k, v]) => ({
+        name: k, value: v.totalEntities || 0,
+      })).sort((a, b) => b.value - a.value);
+      const elS = document.getElementById('chart-ner-per-source');
+      const cS = echarts.init(elS);
+      cS.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                   formatter: (p) => `<strong>${p[0].name}</strong><br/>${fmt(p[0].value)} entitas` },
+        grid: { left: 8, right: 32, top: 8, bottom: 8, containLabel: true },
+        xAxis: { type: 'value' },
+        yAxis: { type: 'category', data: psArr.map(d => d.name).reverse() },
+        series: [{
+          type: 'bar', data: psArr.map(d => ({
+            value: d.value, itemStyle: { color: NER_SRC_COLORS[d.name] || NER_BAR_COLOR }
+          })).reverse(),
+          label: { show: true, position: 'right', fontSize: 10, formatter: (p) => fmt(p.value) }
+        }]
+      });
+      window.addEventListener('resize', () => cS.resize());
+
+      // Monthly trend — top 5 PER overall, plot mention per bulan
+      const top5 = (NER.topByType.PER || []).slice(0, 5).map(e => e.text);
+      const monthList = months;
+      const series = top5.map((person, i) => {
+        const data = monthList.map(m => {
+          const entries = NER.monthlyTopPersons[m] || [];
+          const found = entries.find(e => e.text === person);
+          if (!found) return 0;
+          if (NER_SOURCE === 'all') return found.count;
+          return (found.perSource || {})[NER_SOURCE] || 0;
+        });
+        return {
+          name: person, type: 'line', data, smooth: true, symbolSize: 6,
+          itemStyle: { color: i === 0 ? NER_FOCAL : `hsl(${i*65 % 360},45%,50%)` },
+          lineStyle: { width: i === 0 ? 3 : 2 }
+        };
+      });
+      const elM = document.getElementById('chart-ner-monthly');
+      const cM = echarts.init(elM);
+      cM.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { type: 'scroll', top: 0, textStyle: { fontSize: 11 } },
+        grid: { left: 8, right: 30, top: 40, bottom: 30, containLabel: true },
+        xAxis: { type: 'category', data: monthList, axisLabel: { rotate: 45, fontSize: 10 } },
+        yAxis: { type: 'value', name: 'mention' },
+        series
+      });
+      window.addEventListener('resize', () => cM.resize());
+
+      // Co-occurrence table
+      const coocBody = document.querySelector('#ner-cooc-table tbody');
+      const coocs = (NER.coOccurrence || []).map(e => ({
+        ...e, value: NER_SOURCE === 'all' ? e.count : ((e.perSource || {})[NER_SOURCE] || 0)
+      })).filter(e => e.value > 0);
+      coocs.sort((a, b) => b.value - a.value);
+      coocBody.innerHTML = coocs.slice(0, 20).map((c, i) => `
+        <tr><td>${i + 1}</td><td>${c.pair[0]}</td><td>${c.pair[1]}</td>
+        <td style="text-align:right">${fmt(c.value)}</td></tr>
+      `).join('');
+
+      // Top PER per portal (news source)
+      const portalBody = document.querySelector('#ner-portal-per-table tbody');
+      const portals = NER.newsPortalTopPersons || [];
+      portalBody.innerHTML = portals.map(p => {
+        const persons = p.topPersons.map(x => `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;background:#f3f4f6;border-radius:4px;font-size:11px">${x.text} <strong>${fmt(x.count)}</strong></span>`).join(' ');
+        return `<tr><td><strong>${p.portal}</strong></td><td>${persons}</td></tr>`;
+      }).join('');
     }
 
     // ====== Boot ======
