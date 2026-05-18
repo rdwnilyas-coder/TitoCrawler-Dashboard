@@ -1072,6 +1072,39 @@
         </p>
       </div>
 
+      <!-- 0. Temporal — top entities timeline (full-width, above the rest) -->
+      <div class="card" style="margin-top:14px">
+        <h3>⏱️ Temporal — timeline top 8 entitas (cross-source)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Mention bulanan top 8 PER hasil canonical merge, diwarnai by lifecycle class
+          (<span style="color:#16a34a">rising</span> / <span style="color:#ea580c">peaked</span> /
+          <span style="color:#dc2626">fading</span> / <span style="color:#6366f1">steady</span>).
+          Bulatan ★ menandai mention spike (z-score ≥2.5).
+        </p>
+        <div class="filters" style="margin-bottom:6px">
+          <label style="font-size:12px;color:var(--text-muted)">Tampilkan:</label>
+          <select id="ner-temporal-mode">
+            <option value="top">Top 8 by total mention</option>
+            <option value="rising">Hanya class: rising</option>
+            <option value="peaked">Hanya class: peaked</option>
+            <option value="fading">Hanya class: fading</option>
+          </select>
+          <label style="font-size:12px;color:var(--text-muted);margin-left:12px">
+            <input type="checkbox" id="ner-temporal-log" /> Log scale Y
+          </label>
+        </div>
+        <div class="chart chart-tall" id="chart-ner-temporal" style="height:420px"></div>
+      </div>
+
+      <!-- Spike density timeline (compact, monthly aggregate) -->
+      <div class="card" style="margin-top:14px">
+        <h3>🌋 Spike density per bulan (semua entitas, all sources)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Hitung jumlah spike per bulan. Bulan tinggi = period dengan banyak narrative breaks.
+        </p>
+        <div class="chart" id="chart-ner-spike-density" style="height:220px"></div>
+      </div>
+
       <!-- 1. Canonical entity clusters -->
       <div class="grid-2" style="margin-top:14px">
         <div class="card">
@@ -2676,6 +2709,10 @@
       if (!NER_INSIGHTS) return;
       const I = NER_INSIGHTS;
 
+      // 0. Temporal multi-line + spike density
+      renderNERTemporal();
+      renderNERSpikeDensity();
+
       // 1. Canonical clusters
       const canonBody = document.querySelector('#ner-canon-table tbody');
       canonBody.innerHTML = (I.canonical.clusters || []).map(c => {
@@ -2801,6 +2838,125 @@
       monBody.innerHTML = (I.policy.topMon || []).slice(0, 15).map(x =>
         `<tr><td style="font-size:12px">${x.text}</td><td style="text-align:right">${fmt(x.count)}</td></tr>`
       ).join('');
+    }
+
+    // ====== NER Temporal charts ======
+    function _temporalSeries(entities) {
+      // Build {months: sorted, series: [{name, data, color}]}
+      const monthSet = new Set();
+      entities.forEach(e => (e.timeline || []).forEach(t => monthSet.add(t.month)));
+      const months = Array.from(monthSet).sort();
+      const series = entities.map(e => {
+        const tl = Object.fromEntries((e.timeline || []).map(t => [t.month, t.count]));
+        const data = months.map(m => tl[m] || 0);
+        const color = LIFECYCLE_COLORS[e.class] || '#6b7280';
+        // markPoint for spikes for this entity
+        const spikesForEntity = (NER_INSIGHTS.spikes || []).filter(s => s.entity === e.entity);
+        const markData = spikesForEntity.map(s => ({
+          coord: [s.month, s.count], value: s.zScore,
+          symbol: 'pin', symbolSize: 36,
+          itemStyle: { color: s.severity === 'high' ? '#dc2626' : (s.severity === 'medium' ? '#f59e0b' : '#facc15') },
+          label: { fontSize: 9, color: '#000', formatter: (p) => `z=${p.value}` }
+        }));
+        return {
+          name: `${e.entity} (${e.class})`,
+          type: 'line', smooth: true, data,
+          symbolSize: 4, lineStyle: { color, width: 2 }, itemStyle: { color },
+          emphasis: { focus: 'series' },
+          markPoint: markData.length ? { data: markData } : undefined
+        };
+      });
+      return { months, series };
+    }
+
+    function renderNERTemporal() {
+      if (!NER_INSIGHTS) return;
+      const lifecycle = NER_INSIGHTS.lifecycle || [];
+      if (!lifecycle.length) return;
+      const modeEl = document.getElementById('ner-temporal-mode');
+      const logEl = document.getElementById('ner-temporal-log');
+      const renderInner = () => {
+        const mode = modeEl ? modeEl.value : 'top';
+        const useLog = logEl && logEl.checked;
+        let pool;
+        if (mode === 'top') {
+          pool = [...lifecycle].sort((a, b) => b.totalMentions - a.totalMentions).slice(0, 8);
+        } else {
+          pool = lifecycle.filter(x => x.class === mode).slice(0, 12);
+          if (!pool.length) {
+            pool = [...lifecycle].sort((a, b) => b.totalMentions - a.totalMentions).slice(0, 8);
+          }
+        }
+        const { months, series } = _temporalSeries(pool);
+        const el = document.getElementById('chart-ner-temporal');
+        const chart = echarts.init(el);
+        chart.setOption({
+          tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+          legend: { type: 'scroll', top: 0, textStyle: { fontSize: 11 } },
+          grid: { left: 8, right: 24, top: 50, bottom: 40, containLabel: true },
+          xAxis: { type: 'category', data: months, axisLabel: { rotate: 45, fontSize: 10 } },
+          yAxis: {
+            type: useLog ? 'log' : 'value',
+            name: 'mention',
+            min: useLog ? 1 : 0,
+            axisLabel: { fontSize: 10 }
+          },
+          dataZoom: [{ type: 'inside' }, { type: 'slider', height: 18, bottom: 6 }],
+          series,
+        }, true);
+        window.addEventListener('resize', () => chart.resize());
+      };
+      if (modeEl && !modeEl.dataset.bound) {
+        modeEl.dataset.bound = '1';
+        modeEl.addEventListener('change', renderInner);
+      }
+      if (logEl && !logEl.dataset.bound) {
+        logEl.dataset.bound = '1';
+        logEl.addEventListener('change', renderInner);
+      }
+      renderInner();
+    }
+
+    function renderNERSpikeDensity() {
+      if (!NER_INSIGHTS) return;
+      const spikes = NER_INSIGHTS.spikes || [];
+      if (!spikes.length) return;
+      // Group by month → count + breakdown by severity
+      const byMonth = {};
+      spikes.forEach(s => {
+        if (!byMonth[s.month]) byMonth[s.month] = { high: 0, medium: 0, low: 0 };
+        byMonth[s.month][s.severity] = (byMonth[s.month][s.severity] || 0) + 1;
+      });
+      const months = Object.keys(byMonth).sort();
+      const el = document.getElementById('chart-ner-spike-density');
+      const chart = echarts.init(el);
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+          formatter: (p) => {
+            const m = p[0].name;
+            const b = byMonth[m] || {};
+            const list = (spikes.filter(s => s.month === m)
+              .sort((a, b) => b.zScore - a.zScore).slice(0, 5)
+              .map(s => `${s.entity} (${s.source}, z=${s.zScore})`));
+            return `<strong>${m}</strong><br/>` +
+              `high: ${b.high || 0} · medium: ${b.medium || 0} · low: ${b.low || 0}<br/>` +
+              `<small>${list.join('<br/>')}</small>`;
+          }
+        },
+        legend: { top: 0, textStyle: { fontSize: 11 } },
+        grid: { left: 8, right: 16, top: 30, bottom: 24, containLabel: true },
+        xAxis: { type: 'category', data: months, axisLabel: { rotate: 45, fontSize: 10 } },
+        yAxis: { type: 'value', name: 'jumlah spike', axisLabel: { fontSize: 10 } },
+        series: [
+          { name: 'high (z≥3.5)', type: 'bar', stack: 'spike', data: months.map(m => byMonth[m].high || 0),
+            itemStyle: { color: '#dc2626' } },
+          { name: 'medium (2.5≤z<3.5)', type: 'bar', stack: 'spike', data: months.map(m => byMonth[m].medium || 0),
+            itemStyle: { color: '#f59e0b' } },
+          { name: 'low (2.0≤z<2.5)', type: 'bar', stack: 'spike', data: months.map(m => byMonth[m].low || 0),
+            itemStyle: { color: '#facc15' } },
+        ],
+      });
+      window.addEventListener('resize', () => chart.resize());
     }
 
     // ====== Boot ======
