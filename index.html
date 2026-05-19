@@ -4789,14 +4789,20 @@
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af">No data</td></tr>';
         return;
       }
+      // Lookup readable label news
+      const newsReadable = {};
+      ((TOPIC.sources?.news?.topics) || []).forEach(t => {
+        newsReadable[t.id] = t.label_readable || t.label_auto;
+      });
       tbody.innerHTML = rows.map(r => {
         const color = TOPIC_PALETTE[r.top_topic_id % TOPIC_PALETTE.length];
         const entColor = r.normalized_entropy < 0.5 ? '#dc2626' : (r.normalized_entropy < 0.7 ? '#ea580c' : '#16a34a');
+        const readable = newsReadable[r.top_topic_id] || r.top_topic_label;
         return `<tr>
           <td style="font-size:12px">${r.reporter}</td>
           <td style="text-align:right">${r.n_docs}</td>
           <td style="text-align:right;color:${entColor};font-weight:bold">${r.normalized_entropy.toFixed(2)}</td>
-          <td style="font-size:11px"><span style="display:inline-block;width:10px;height:10px;background:${color};border-radius:2px;vertical-align:middle"></span> T${r.top_topic_id} ${r.top_topic_label}</td>
+          <td style="font-size:11px"><span style="display:inline-block;width:10px;height:10px;background:${color};border-radius:2px;vertical-align:middle"></span> T${r.top_topic_id} ${readable}</td>
           <td style="text-align:right">${(r.top_topic_share * 100).toFixed(0)}%</td>
         </tr>`;
       }).join('');
@@ -4826,11 +4832,18 @@
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af">Tidak ada similarity > 0.05</td></tr>';
         return;
       }
+      // Lookup readable labels untuk source a dan b
+      const aReadable = {};
+      const bReadable = {};
+      ((TOPIC.sources?.[a]?.topics) || []).forEach(t => { aReadable[t.id] = t.label_readable || t.label_auto; });
+      ((TOPIC.sources?.[b]?.topics) || []).forEach(t => { bReadable[t.id] = t.label_readable || t.label_auto; });
       tbody.innerHTML = pairs.map((p, i) => {
-        const aLabel = swapped ? p.b_label : p.a_label;
+        const aLabelRaw = swapped ? p.b_label : p.a_label;
         const aId = swapped ? p.b_id : p.a_id;
-        const bLabel = swapped ? p.a_label : p.b_label;
+        const bLabelRaw = swapped ? p.a_label : p.b_label;
         const bId = swapped ? p.a_id : p.b_id;
+        const aLabel = aReadable[aId] || aLabelRaw;
+        const bLabel = bReadable[bId] || bLabelRaw;
         const bar = '█'.repeat(Math.max(1, Math.round(p.similarity * 20)));
         return `<tr>
           <td>${i + 1}</td>
