@@ -299,6 +299,61 @@
       color: var(--text-muted);
       font-size: 12px;
     }
+    /* === Stories tab === */
+    .story-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; margin-bottom: 14px; }
+    .story-section-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .story-section-header .icon { font-size: 22px; line-height: 1; }
+    .story-section-header .label { font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color: var(--text-muted); font-weight:700; }
+    .story-section-header .heading { font-size:18px; font-weight:700; color: var(--text); margin-top:1px; }
+    .story-narasi { font-size:14px; line-height:1.65; color: var(--text); margin: 4px 0 14px; }
+    .story-evidence { display: grid; gap: 14px; }
+    .story-tone-positive   { background: rgba(22,163,74,0.12);  color:#15803d; border:1px solid rgba(22,163,74,0.35); }
+    .story-tone-mixed      { background: rgba(217,147,96,0.18); color:#9a3412; border:1px solid rgba(217,147,96,0.45); }
+    .story-tone-challenging{ background: rgba(245,158,11,0.16); color:#92400e; border:1px solid rgba(245,158,11,0.45); }
+    .story-tone-crisis     { background: rgba(220,38,38,0.14);  color:#991b1b; border:1px solid rgba(220,38,38,0.45); }
+    .story-summary-card { background: linear-gradient(135deg, #f9fafb 0%, #f1f5f9 100%); border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px; margin-bottom: 14px; }
+    .story-summary-card h2 { margin:0 0 6px; font-size: 22px; font-weight: 800; color: var(--text); line-height:1.25; }
+    .story-summary-card .summary-text { font-size: 14px; line-height: 1.65; color: var(--text); margin:6px 0 10px; }
+    .story-tag-list { display:flex; gap:6px; flex-wrap:wrap; margin-top: 8px; }
+    .story-tag { font-size:11px; background:rgba(0,0,0,0.05); padding: 3px 9px; border-radius: 10px; color: var(--text-muted); font-weight:600; }
+    .story-chart { width: 100%; height: 280px; }
+    .story-chart-tall { width: 100%; height: 360px; }
+    /* KPI strip in stories */
+    .story-kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+    .story-kpi-card { background: #fafafa; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+    .story-kpi-card .label { font-size:11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight:600; }
+    .story-kpi-card .value { font-size:20px; font-weight:800; margin-top:2px; }
+    /* Quote list */
+    .story-quote-list { display: flex; flex-direction: column; gap: 8px; }
+    .story-quote { background:#fafafa; border-left: 3px solid var(--accent-3); padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 13px; line-height: 1.55; }
+    .story-quote .text { color: var(--text); }
+    .story-quote .meta { display:flex; gap:8px; font-size: 11px; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap; }
+    .story-quote .meta .author { font-weight:600; color: var(--text); }
+    /* Table */
+    .story-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .story-table thead th { background:#f9fafb; padding: 8px 12px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.3px; color: var(--text-muted); border-bottom:1px solid var(--border); }
+    .story-table tbody td { padding: 8px 12px; border-bottom:1px solid var(--border); }
+    .story-table tbody tr:hover { background:#f8fafc; }
+    /* What Now */
+    .story-what-now { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 768px) { .story-what-now { grid-template-columns: 1fr; } }
+    .story-risk-banner { padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6; grid-column: 1 / -1; }
+    .story-risk-low      { background: rgba(22,163,74,0.10);  border-left: 4px solid #16a34a; color:#15803d; }
+    .story-risk-medium   { background: rgba(245,158,11,0.10); border-left: 4px solid #f59e0b; color:#92400e; }
+    .story-risk-high     { background: rgba(234,88,12,0.10);  border-left: 4px solid #ea580c; color:#9a3412; }
+    .story-risk-critical { background: rgba(220,38,38,0.10);  border-left: 4px solid #dc2626; color:#991b1b; }
+    .story-risk-banner .risk-label { font-weight:800; text-transform: uppercase; letter-spacing: 1px; font-size: 11px; }
+    .story-action-block { background: #fafafa; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+    .story-action-block h4 { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: .5px; }
+    .story-action-block ul { margin: 0; padding-left: 18px; }
+    .story-action-block li { font-size: 13px; line-height: 1.6; color: var(--text); margin-bottom: 4px; }
+    .story-kpi-block { grid-column: 1 / -1; background: linear-gradient(135deg, #eff6ff 0%, #f1f5f9 100%); border:1px solid #c7d2fe; border-radius:8px; padding: 14px 16px; }
+    .story-kpi-block h4 { margin: 0 0 8px; font-size: 13px; font-weight:700; color:#1e3a8a; text-transform: uppercase; letter-spacing:.5px; }
+    .story-kpi-block ul { margin:0; padding-left: 18px; }
+    .story-kpi-block li { font-size: 13px; line-height: 1.6; color:#1e3a8a; margin-bottom:4px; }
+    /* Picker select */
+    #story-picker { padding: 8px 12px; border: 1.5px solid var(--accent-3); border-radius: 6px; font-size: 13px; font-weight: 600; background: white; cursor: pointer; min-width: 280px; }
+    #story-picker:focus { outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.18); }
   </style>
 </head>
 <body>
@@ -330,6 +385,7 @@
     <button data-tab="tw-comments">💬 TW Replies</button>
     <button data-tab="facebook">📘 Facebook</button>
     <button data-tab="fb-comments">💬 FB Comments</button>
+    <button data-tab="stories">📖 Stories</button>
   </nav>
   <div class="tab-mobile" role="tablist" aria-label="Pilih tab">
     <label for="tab-select">Tab</label>
@@ -338,6 +394,12 @@
       <option value="reporters">👥 Reporters &amp; Tags</option>
       <option value="articles">📄 Articles</option>
       <option value="ner">🏷️ Analisis NER</option>
+      <option value="topic">🧩 Topic Modelling</option>
+      <option value="sna-socmed">📡 SNA Sosmed</option>
+      <option value="sentiment">💚💛💔 Sentiment</option>
+      <option value="bot-coord">🤖 Bot &amp; Coordination</option>
+      <option value="hate">🚨 Hate Speech</option>
+      <option value="stance">⚖️ Stance per Kebijakan</option>
       <option value="youtube">🎥 YouTube</option>
       <option value="yt-comments">💬 YT Comments</option>
       <option value="tiktok">🎵 TikTok</option>
@@ -348,6 +410,7 @@
       <option value="tw-comments">💬 TW Replies</option>
       <option value="facebook">📘 Facebook</option>
       <option value="fb-comments">💬 FB Comments</option>
+      <option value="stories">📖 Stories</option>
     </select>
   </div>
 
@@ -1972,6 +2035,26 @@
         <div id="stance-samples"></div>
       </div>
     </section>
+
+    <!-- Tab: 📖 Stories — umbrella narrative 5W1H + What Now -->
+    <section class="tab-content" id="tab-stories">
+      <div class="card" style="margin-bottom:14px">
+        <h3>📖 Stories — 10 narasi umbrella dari sudut pandang Tito Karnavian</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Tiap cerita: 5W1H (apa/siapa/kapan/di mana/kenapa/bagaimana) + <strong>What Now</strong>
+          (risiko, mitigasi taktis, roadmap strategis, KPI). Bukti grafik di setiap section
+          adalah snapshot data tanpa filter — angka final hasil analisis. <em>Audience: candid
+          self-awareness mode, tidak di-filter PR.</em>
+        </p>
+        <div class="filters" style="margin-top:10px;grid-template-columns:auto 1fr auto">
+          <label style="font-size:12px;color:var(--text-muted)"><strong>Pilih cerita:</strong></label>
+          <select id="story-picker"></select>
+          <div id="story-tone-badge" style="font-size:12px;font-weight:600;padding:6px 12px;border-radius:6px"></div>
+        </div>
+      </div>
+
+      <div id="story-content"></div>
+    </section>
   </main>
 
   <footer>
@@ -2075,6 +2158,7 @@
     // ====== Tab navigation ======
     const tabsRendered = { overview: false, reporters: false, articles: false,
                            ner: false, topic: false, 'sna-socmed': false, sentiment: false, 'bot-coord': false, hate: false, stance: false,
+                           stories: false,
                            youtube: false, 'yt-comments': false,
                            tiktok: false, 'tt-comments': false,
                            instagram: false, 'ig-comments': false,
@@ -2106,6 +2190,7 @@
         if (name === 'bot-coord') await renderBotCoord();
         if (name === 'hate') await renderHate();
         if (name === 'stance') await renderStance();
+        if (name === 'stories') await renderStories();
         tabsRendered[name] = true;
       }
       // Resize charts after tab shown (ECharts needs visible container)
@@ -5674,6 +5759,295 @@
             </div>`;
         }).join('')}
       </div>`;
+    }
+
+    // ====== Stories Tab ======
+    let STORIES = null;
+    let STORY_CHART_INSTANCES = []; // for resize cleanup
+
+    async function renderStories() {
+      if (!STORIES) {
+        STORIES = await fetch('data/stories.json').then(r => r.json()).catch(() => null);
+      }
+      if (!STORIES || !STORIES.stories) {
+        document.getElementById('story-content').innerHTML =
+          '<div class="card"><p>Data stories.json belum tersedia.</p></div>';
+        return;
+      }
+      const picker = document.getElementById('story-picker');
+      picker.innerHTML = STORIES.stories.map(s =>
+        `<option value="${s.id}">#${s.rank} — ${s.title}</option>`
+      ).join('');
+      picker.onchange = () => renderStory(picker.value);
+      renderStory(picker.value || STORIES.stories[0].id);
+      window.addEventListener('resize', () => {
+        STORY_CHART_INSTANCES.forEach(c => { try { c.resize(); } catch(e) {} });
+      });
+    }
+
+    function renderStory(id) {
+      const s = STORIES.stories.find(x => x.id === id);
+      if (!s) return;
+      // Dispose previous chart instances
+      STORY_CHART_INSTANCES.forEach(c => { try { c.dispose(); } catch(e) {} });
+      STORY_CHART_INSTANCES = [];
+
+      // Tone badge
+      const badge = document.getElementById('story-tone-badge');
+      const toneCls = {
+        positive: 'story-tone-positive',
+        mixed: 'story-tone-mixed',
+        challenging: 'story-tone-challenging',
+        crisis: 'story-tone-crisis',
+      }[s.tone] || 'story-tone-mixed';
+      const toneLabel = {
+        positive: '🟢 Positive',
+        mixed: '🟡 Mixed',
+        challenging: '🟠 Challenging',
+        crisis: '🔴 Crisis',
+      }[s.tone] || s.tone;
+      badge.className = toneCls;
+      badge.textContent = toneLabel;
+
+      // Build HTML
+      const sectionsOrder = ['what', 'who', 'when', 'where', 'why', 'how'];
+      const sectionsMeta = {
+        what:  { icon: '🎯', label: 'WHAT',  heading: 'Apa inti peristiwanya' },
+        who:   { icon: '👥', label: 'WHO',   heading: 'Siapa aktor utamanya' },
+        when:  { icon: '🗓️', label: 'WHEN',  heading: 'Kapan momen kunci terjadi' },
+        where: { icon: '📍', label: 'WHERE', heading: 'Di mana intens (platform & wilayah)' },
+        why:   { icon: '🧠', label: 'WHY',   heading: 'Kenapa cerita ini muncul' },
+        how:   { icon: '🔁', label: 'HOW',   heading: 'Bagaimana penyebarannya' },
+      };
+
+      const container = document.getElementById('story-content');
+      let html = '';
+
+      // Summary card
+      html += `<div class="story-summary-card">
+        <h2>${escapeHtml(s.title)}</h2>
+        <p class="summary-text">${escapeHtml(s.summary)}</p>
+        <div class="story-tag-list">${(s.tags||[]).map(t => `<span class="story-tag">#${escapeHtml(t)}</span>`).join('')}</div>
+      </div>`;
+
+      // 5W1H sections
+      for (const key of sectionsOrder) {
+        const sec = s.sections[key];
+        if (!sec) continue;
+        const meta = sectionsMeta[key];
+        const evCount = (sec.evidence || []).length;
+        const evHtml = (sec.evidence || []).map((ev, i) => {
+          const evId = `story-${s.id}-${key}-${i}`;
+          return renderEvidence(ev, evId);
+        }).join('');
+        html += `<div class="story-section">
+          <div class="story-section-header">
+            <span class="icon">${meta.icon}</span>
+            <div>
+              <div class="label">${meta.label}</div>
+              <div class="heading">${meta.heading}</div>
+            </div>
+          </div>
+          <div class="story-narasi">${escapeHtml(sec.narasi || '')}</div>
+          ${evCount ? `<div class="story-evidence">${evHtml}</div>` : ''}
+        </div>`;
+      }
+
+      // What Now section
+      const wn = s.sections.what_now;
+      if (wn) {
+        const riskCls = `story-risk-${(wn.risk_level || 'medium').toLowerCase()}`;
+        html += `<div class="story-section">
+          <div class="story-section-header">
+            <span class="icon">⚡</span>
+            <div>
+              <div class="label">WHAT NOW</div>
+              <div class="heading">Langkah Selanjutnya — Risk · Mitigasi · Roadmap · KPI</div>
+            </div>
+          </div>
+          <div class="story-what-now">
+            <div class="story-risk-banner ${riskCls}">
+              <div class="risk-label">Risk level: ${escapeHtml(wn.risk_level || 'medium')}</div>
+              <div style="margin-top:4px">${escapeHtml(wn.risk_summary || '')}</div>
+            </div>
+            <div class="story-action-block">
+              <h4>🛠️ Mitigasi taktis (1–2 minggu)</h4>
+              <ul>${(wn.mitigasi_taktis || []).map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
+            </div>
+            <div class="story-action-block">
+              <h4>🗺️ Roadmap strategis (1–3 bulan)</h4>
+              <ul>${(wn.roadmap_strategis || []).map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
+            </div>
+            <div class="story-kpi-block">
+              <h4>📊 KPI keberhasilan</h4>
+              <ul>${(wn.kpi || []).map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      container.innerHTML = html;
+
+      // After DOM inject, init ECharts for placeholders
+      sectionsOrder.forEach(key => {
+        const sec = s.sections[key];
+        if (!sec) return;
+        (sec.evidence || []).forEach((ev, i) => {
+          const evId = `story-${s.id}-${key}-${i}`;
+          mountEvidenceChart(ev, evId);
+        });
+      });
+    }
+
+    function escapeHtml(str) {
+      if (str == null) return '';
+      return String(str).replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // Returns HTML string for evidence (chart container placeholder or non-chart inline)
+    function renderEvidence(ev, evId) {
+      const title = ev.title ? `<h3>${escapeHtml(ev.title)}</h3>` : '';
+      switch (ev.type) {
+        case 'kpi_strip':
+          return `<div class="card" style="padding:14px 16px">${title}
+            <div class="story-kpi-strip">
+              ${(ev.items || []).map(it => `
+                <div class="story-kpi-card">
+                  <div class="label">${escapeHtml(it.label || '')}</div>
+                  <div class="value" style="${it.color ? `color:${it.color}` : ''}">${escapeHtml(String(it.value ?? ''))}</div>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        case 'quote_list':
+          if (!ev.items || ev.items.length === 0) return '';
+          return `<div class="card" style="padding:14px 16px">${title}
+            <div class="story-quote-list">
+              ${ev.items.map(q => `
+                <div class="story-quote">
+                  <div class="text">"${escapeHtml(q.text || '')}"</div>
+                  <div class="meta">
+                    ${q.author ? `<span class="author">@${escapeHtml(q.author)}</span>` : ''}
+                    ${q.source ? `<span>· ${escapeHtml(q.source)}</span>` : ''}
+                    ${q.month ? `<span>· ${escapeHtml(q.month)}</span>` : ''}
+                    ${q.score != null ? `<span>· score ${(+q.score).toFixed(2)}</span>` : ''}
+                    ${q.label ? `<span>· ${escapeHtml(q.label)}</span>` : ''}
+                  </div>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        case 'table':
+          return `<div class="card" style="padding:14px 16px;overflow-x:auto">${title}
+            <table class="story-table">
+              <thead><tr>${(ev.headers || []).map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+              <tbody>
+                ${(ev.rows || []).map(row => `<tr>${row.map((c, idx) => {
+                  const style = (ev.col_color_idx === idx && typeof c === 'number' && c >= 0)
+                    ? ` style="color:${c>0.5?'#dc2626':(c>0.2?'#ea580c':'#16a34a')};font-weight:600"` : '';
+                  const display = (typeof c === 'number') ? c.toLocaleString('id-ID') : escapeHtml(String(c ?? ''));
+                  return `<td${style}>${display}</td>`;
+                }).join('')}</tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+        case 'donut':
+        case 'bar_h':
+        case 'stacked_bar':
+        case 'line':
+          // Chart — needs ECharts init after mount
+          return `<div class="card" style="padding:14px 16px">${title}
+            <div id="${evId}" class="story-chart${ev.type === 'line' || ev.type === 'stacked_bar' ? '-tall' : ''}"></div>
+          </div>`;
+        default:
+          return '';
+      }
+    }
+
+    // Mount ECharts to the placeholder (read-only: no toolbox, no dataZoom, legend non-selectable)
+    function mountEvidenceChart(ev, evId) {
+      const el = document.getElementById(evId);
+      if (!el) return;
+      if (!['donut','bar_h','stacked_bar','line'].includes(ev.type)) return;
+      const chart = echarts.init(el);
+      let opt = null;
+      const baseOpt = {
+        animation: false,
+        textStyle: { fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif' },
+      };
+      if (ev.type === 'donut') {
+        opt = {
+          ...baseOpt,
+          tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+          legend: { bottom: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          series: [{
+            type: 'pie',
+            radius: ['45%', '70%'],
+            avoidLabelOverlap: true,
+            label: { show: true, formatter: '{b}\n{d}%', fontSize: 11 },
+            labelLine: { show: true, length: 8, length2: 6 },
+            data: (ev.data || []).map(d => ({
+              name: d.name, value: d.value,
+              itemStyle: { color: d.color || '#9ca3af' },
+            })),
+          }],
+        };
+      } else if (ev.type === 'bar_h') {
+        opt = {
+          ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+          grid: { left: 8, right: 30, top: 8, bottom: 8, containLabel: true },
+          xAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { type: 'dashed' } } },
+          yAxis: {
+            type: 'category', data: ev.labels || [],
+            inverse: true, axisTick: { show: false },
+          },
+          series: [{
+            type: 'bar',
+            data: ev.values || [],
+            itemStyle: { color: ev.color || '#1f77b4' },
+            barWidth: '60%',
+            label: { show: true, position: 'right', fontSize: 11,
+                     formatter: function(p) {
+                       const v = p.value;
+                       if (typeof v !== 'number') return v;
+                       if (v >= 10000) return (v/1000).toFixed(1) + 'K';
+                       return v.toLocaleString('id-ID');
+                     } },
+          }],
+        };
+      } else if (ev.type === 'stacked_bar') {
+        opt = {
+          ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+          legend: { top: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          grid: { left: 8, right: 24, top: 36, bottom: 8, containLabel: true },
+          xAxis: { type: 'category', data: ev.categories || [], axisLabel: { fontSize: 11 } },
+          yAxis: { type: 'value' },
+          series: (ev.series || []).map(s => ({
+            name: s.name, type: 'bar', stack: 'total',
+            itemStyle: { color: s.color },
+            data: s.data,
+          })),
+        };
+      } else if (ev.type === 'line') {
+        opt = {
+          ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+          legend: { top: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          grid: { left: 8, right: 24, top: 36, bottom: 8, containLabel: true },
+          xAxis: { type: 'category', data: ev.months || [], axisLabel: { fontSize: 10, rotate: 0 } },
+          yAxis: { type: 'value' },
+          series: (ev.series || []).map(s => ({
+            name: s.name, type: 'line', smooth: true,
+            symbol: 'circle', symbolSize: 5,
+            itemStyle: { color: s.color },
+            lineStyle: { color: s.color, width: 2 },
+            data: s.data,
+          })),
+        };
+      }
+      if (opt) chart.setOption(opt, true);
+      STORY_CHART_INSTANCES.push(chart);
     }
 
     // ====== Boot ======
