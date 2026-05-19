@@ -354,6 +354,41 @@
     /* Picker select */
     #story-picker { padding: 8px 12px; border: 1.5px solid var(--accent-3); border-radius: 6px; font-size: 13px; font-weight: 600; background: white; cursor: pointer; min-width: 280px; }
     #story-picker:focus { outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.18); }
+    /* === Knowledge Graph tab === */
+    .kg-container { display: grid; grid-template-columns: 250px 1fr 280px; gap: 12px; }
+    @media (max-width: 1100px) { .kg-container { grid-template-columns: 1fr; } }
+    .kg-filters { padding: 14px; }
+    .kg-filter-row { margin-bottom: 12px; }
+    .kg-filter-label { display:block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+    .kg-input { padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; background: white; }
+    .kg-date-row { display: flex; align-items: center; gap: 6px; }
+    .kg-date-row input { width: 100%; }
+    .kg-btn-mini { font-size: 11px; padding: 3px 8px; background: #f3f4f6; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; margin-top: 4px; }
+    .kg-btn-mini:hover { background: #e5e7eb; }
+    .kg-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .kg-type-toggle { display: flex; align-items: center; gap: 5px; font-size: 11px; padding: 4px 6px; border-radius: 4px; cursor: pointer; background: white; border: 1px solid var(--border); user-select: none; }
+    .kg-type-toggle.active { background: #eff6ff; border-color: var(--accent-3); }
+    .kg-type-toggle .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .kg-btn { width: 100%; padding: 6px; font-size: 12px; background: white; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .kg-btn:hover { background: #f3f4f6; }
+    .kg-graph-card { padding: 8px; }
+    .kg-detail { padding: 14px; min-height: 200px; }
+    .kg-detail-empty { padding: 40px 12px; text-align: center; }
+    .kg-detail h4 { margin: 0 0 6px; font-size: 14px; color: var(--text); }
+    .kg-detail .kg-meta-row { display: flex; gap: 8px; font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+    .kg-detail .kg-type-pill { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; color: white; }
+    .kg-detail .kg-desc { font-size: 12px; line-height: 1.5; color: var(--text); margin: 8px 0; }
+    .kg-detail .kg-neighbors-list { list-style: none; padding: 0; margin: 8px 0 0; max-height: 200px; overflow-y: auto; }
+    .kg-detail .kg-neighbors-list li { font-size: 12px; padding: 4px 6px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; cursor: pointer; }
+    .kg-detail .kg-neighbors-list li:hover { background: #f9fafb; }
+    .kg-detail .kg-neighbors-list .weight { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    table.kg-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    table.kg-table thead { background: #f9fafb; }
+    table.kg-table th { padding: 6px 8px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    table.kg-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    table.kg-table tbody tr { cursor: pointer; }
+    table.kg-table tbody tr:hover { background: #f8fafc; }
+    table.kg-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body>
@@ -385,6 +420,7 @@
     <button data-tab="bot-coord">🤖 Bot &amp; Coordination</button>
     <button data-tab="hate">🚨 Hate Speech</button>
     <button data-tab="stance">⚖️ Stance per Kebijakan</button>
+    <button data-tab="kg">🕸️ Knowledge Graph</button>
     <button data-tab="stories">📖 Stories</button>
   </nav>
   <div class="tab-mobile" role="tablist" aria-label="Pilih tab">
@@ -410,6 +446,7 @@
       <option value="bot-coord">🤖 Bot &amp; Coordination</option>
       <option value="hate">🚨 Hate Speech</option>
       <option value="stance">⚖️ Stance per Kebijakan</option>
+      <option value="kg">🕸️ Knowledge Graph</option>
       <option value="stories">📖 Stories</option>
     </select>
   </div>
@@ -2036,6 +2073,79 @@
       </div>
     </section>
 
+    <!-- Tab: 🕸️ Knowledge Graph — interaktif, semua entitas konteks Tito -->
+    <section class="tab-content" id="tab-kg">
+      <div class="card" style="margin-bottom:14px">
+        <h3>🕸️ Knowledge Graph — semua entitas konteks Tito Karnavian</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Force-directed graph: Person, Organisasi, Lokasi, Event, Kebijakan, Topik LDA, dan
+          Source (portal/platform sosmed). Klik node untuk lihat detail + neighbors;
+          filter via panel di samping. Drag node untuk reposition. Mode default = semua
+          node dalam scope; mode klik = node-focused dengan 3 panel detail di bawah.
+        </p>
+      </div>
+
+      <div class="kg-container">
+        <!-- Filter sidebar -->
+        <div class="kg-filters card">
+          <h3 style="margin:0 0 10px">Filter</h3>
+          <div class="kg-filter-row">
+            <label class="kg-filter-label">Periode</label>
+            <div class="kg-date-row">
+              <input type="month" id="kg-date-from" class="kg-input" />
+              <span style="color:var(--text-muted)">–</span>
+              <input type="month" id="kg-date-to" class="kg-input" />
+            </div>
+            <button id="kg-date-reset" class="kg-btn-mini">All time</button>
+          </div>
+          <div class="kg-filter-row">
+            <label class="kg-filter-label">Tipe node</label>
+            <div id="kg-type-filters" class="kg-type-grid"></div>
+          </div>
+          <div class="kg-filter-row">
+            <label class="kg-filter-label">Min edge weight: <span id="kg-min-edge-val">10</span></label>
+            <input type="range" id="kg-min-edge" min="1" max="500" step="1" value="10" class="kg-input" style="width:100%" />
+          </div>
+          <div class="kg-filter-row" style="border-top:1px solid var(--border); padding-top:10px">
+            <button id="kg-reset" class="kg-btn">↺ Reset semua filter</button>
+          </div>
+          <div class="kg-filter-row" style="font-size:11px;color:var(--text-muted)">
+            <div id="kg-stats"></div>
+          </div>
+        </div>
+
+        <!-- Graph area -->
+        <div class="card kg-graph-card">
+          <div id="kg-graph" style="width:100%; height:600px"></div>
+        </div>
+
+        <!-- Right detail panel (context-aware) -->
+        <div class="card kg-detail">
+          <div id="kg-detail-content">
+            <div class="kg-detail-empty">
+              <p style="font-size:13px;color:var(--text-muted)">Klik node di graph untuk lihat detail.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3-panel context-aware view (di bawah graph) -->
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <h3 id="kg-table-title">📋 Top node (Mode 1: default)</h3>
+          <div id="kg-table-wrapper" style="overflow-x:auto"></div>
+        </div>
+        <div class="card">
+          <h3 id="kg-bar-title">📊 Top 15 by degree</h3>
+          <div id="kg-bar" style="width:100%; height:380px"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3 id="kg-timeline-title">📈 Timeline mention bulanan</h3>
+        <div id="kg-timeline" style="width:100%; height:280px"></div>
+      </div>
+    </section>
+
     <!-- Tab: 📖 Stories — umbrella narrative 5W1H + What Now -->
     <section class="tab-content" id="tab-stories">
       <div class="card" style="margin-bottom:14px">
@@ -2157,7 +2267,7 @@
     // ====== Tab navigation ======
     const tabsRendered = { overview: false, reporters: false, articles: false,
                            ner: false, topic: false, 'sna-socmed': false, sentiment: false, 'bot-coord': false, hate: false, stance: false,
-                           stories: false,
+                           kg: false, stories: false,
                            youtube: false, 'yt-comments': false,
                            tiktok: false, 'tt-comments': false,
                            instagram: false, 'ig-comments': false,
@@ -2189,6 +2299,7 @@
         if (name === 'bot-coord') await renderBotCoord();
         if (name === 'hate') await renderHate();
         if (name === 'stance') await renderStance();
+        if (name === 'kg') await renderKG();
         if (name === 'stories') await renderStories();
         tabsRendered[name] = true;
       }
@@ -5758,6 +5869,420 @@
             </div>`;
         }).join('')}
       </div>`;
+    }
+
+    // ====== Knowledge Graph Tab ======
+    let KG = null;
+    let KG_CHART = null;       // force-directed graph
+    let KG_BAR = null;
+    let KG_TIMELINE = null;
+    const KG_STATE = {
+      dateFrom: null,       // 'YYYY-MM' or null = all
+      dateTo: null,
+      enabledTypes: new Set(),
+      minEdgeWeight: 10,
+      selectedNode: null,   // node id or null
+    };
+
+    async function renderKG() {
+      if (!KG) {
+        KG = await fetch('data/knowledge_graph.json').then(r => r.json()).catch(() => null);
+      }
+      if (!KG || !KG.nodes) {
+        document.getElementById('kg-graph').innerHTML =
+          '<p style="padding:20px;text-align:center;color:#dc2626">Data knowledge_graph.json belum tersedia.</p>';
+        return;
+      }
+
+      // Init state
+      KG_STATE.enabledTypes = new Set(KG.meta.node_types);
+      const months = KG.meta.all_months || [];
+      if (months.length) {
+        document.getElementById('kg-date-from').value = months[0];
+        document.getElementById('kg-date-to').value = months[months.length-1];
+      }
+      KG_STATE.dateFrom = null;
+      KG_STATE.dateTo = null;
+
+      // Build type filter pills
+      const typeGrid = document.getElementById('kg-type-filters');
+      typeGrid.innerHTML = KG.meta.node_types.map(t => {
+        const lbl = KG.meta.type_label[t] || t;
+        const col = KG.meta.type_color[t] || '#9ca3af';
+        return `<div class="kg-type-toggle active" data-type="${t}">
+          <span class="dot" style="background:${col}"></span>
+          <span>${lbl}</span>
+        </div>`;
+      }).join('');
+      typeGrid.querySelectorAll('.kg-type-toggle').forEach(el => {
+        el.addEventListener('click', () => {
+          const t = el.dataset.type;
+          if (KG_STATE.enabledTypes.has(t)) {
+            KG_STATE.enabledTypes.delete(t);
+            el.classList.remove('active');
+          } else {
+            KG_STATE.enabledTypes.add(t);
+            el.classList.add('active');
+          }
+          updateKGGraph();
+        });
+      });
+
+      // Date filter listeners
+      document.getElementById('kg-date-from').addEventListener('change', e => {
+        KG_STATE.dateFrom = e.target.value || null;
+        updateKGGraph();
+      });
+      document.getElementById('kg-date-to').addEventListener('change', e => {
+        KG_STATE.dateTo = e.target.value || null;
+        updateKGGraph();
+      });
+      document.getElementById('kg-date-reset').addEventListener('click', () => {
+        KG_STATE.dateFrom = null;
+        KG_STATE.dateTo = null;
+        if (months.length) {
+          document.getElementById('kg-date-from').value = months[0];
+          document.getElementById('kg-date-to').value = months[months.length-1];
+        }
+        updateKGGraph();
+      });
+
+      // Min edge listener
+      const edgeSlider = document.getElementById('kg-min-edge');
+      edgeSlider.addEventListener('input', e => {
+        KG_STATE.minEdgeWeight = +e.target.value;
+        document.getElementById('kg-min-edge-val').textContent = e.target.value;
+        updateKGGraph();
+      });
+
+      // Reset all
+      document.getElementById('kg-reset').addEventListener('click', () => {
+        KG_STATE.enabledTypes = new Set(KG.meta.node_types);
+        KG_STATE.dateFrom = null;
+        KG_STATE.dateTo = null;
+        KG_STATE.minEdgeWeight = 10;
+        KG_STATE.selectedNode = null;
+        edgeSlider.value = 10;
+        document.getElementById('kg-min-edge-val').textContent = '10';
+        if (months.length) {
+          document.getElementById('kg-date-from').value = months[0];
+          document.getElementById('kg-date-to').value = months[months.length-1];
+        }
+        typeGrid.querySelectorAll('.kg-type-toggle').forEach(el => el.classList.add('active'));
+        updateKGGraph();
+      });
+
+      // Init graph + panels
+      KG_CHART = echarts.init(document.getElementById('kg-graph'));
+      KG_BAR = echarts.init(document.getElementById('kg-bar'));
+      KG_TIMELINE = echarts.init(document.getElementById('kg-timeline'));
+      updateKGGraph();
+      window.addEventListener('resize', () => {
+        if (KG_CHART) KG_CHART.resize();
+        if (KG_BAR) KG_BAR.resize();
+        if (KG_TIMELINE) KG_TIMELINE.resize();
+      });
+    }
+
+    function kgFilteredData() {
+      // Filter nodes by enabledTypes + monthly intersect date range
+      const fromM = KG_STATE.dateFrom;
+      const toM = KG_STATE.dateTo;
+      const enabled = KG_STATE.enabledTypes;
+
+      // For each node, compute mentions-in-range
+      const nodesInScope = KG.nodes.filter(n => {
+        if (!enabled.has(n.type)) return false;
+        if (fromM || toM) {
+          // Only filter by date if node has monthly data; nodes without (e.g. source, policy) pass through
+          const m = n.monthly || {};
+          if (Object.keys(m).length > 0) {
+            const inRange = Object.keys(m).some(k =>
+              (!fromM || k >= fromM) && (!toM || k <= toM));
+            if (!inRange) return false;
+          }
+        }
+        return true;
+      }).map(n => {
+        const m = n.monthly || {};
+        let mentionsInRange = n.mentions || 0;
+        if ((fromM || toM) && Object.keys(m).length > 0) {
+          mentionsInRange = 0;
+          for (const k in m) {
+            if ((!fromM || k >= fromM) && (!toM || k <= toM)) mentionsInRange += m[k];
+          }
+        }
+        return { ...n, _mentionsInRange: mentionsInRange };
+      });
+
+      const nodeIds = new Set(nodesInScope.map(n => n.id));
+      const edgesInScope = KG.edges.filter(e =>
+        nodeIds.has(e.source) && nodeIds.has(e.target) && e.weight >= KG_STATE.minEdgeWeight
+      );
+
+      // Remove orphan nodes after edge filter (except policy/source as anchors)
+      const connectedIds = new Set();
+      edgesInScope.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
+      const finalNodes = nodesInScope.filter(n =>
+        connectedIds.has(n.id) || ['policy','source_portal','source_socmed'].includes(n.type)
+      );
+      const finalIds = new Set(finalNodes.map(n => n.id));
+      const finalEdges = edgesInScope.filter(e => finalIds.has(e.source) && finalIds.has(e.target));
+
+      // Compute degree map
+      const degree = {};
+      finalNodes.forEach(n => degree[n.id] = 0);
+      finalEdges.forEach(e => { degree[e.source]=(degree[e.source]||0)+1; degree[e.target]=(degree[e.target]||0)+1; });
+      finalNodes.forEach(n => n._degree = degree[n.id] || 0);
+
+      return { nodes: finalNodes, edges: finalEdges };
+    }
+
+    function updateKGGraph() {
+      const data = kgFilteredData();
+      document.getElementById('kg-stats').innerHTML =
+        `Visible: <strong>${data.nodes.length}</strong> nodes · <strong>${data.edges.length}</strong> edges`;
+
+      // Render graph
+      KG_CHART.setOption({
+        animation: false,
+        tooltip: {
+          formatter: p => {
+            if (p.dataType === 'node') {
+              return `<b>${p.data.name}</b><br/>` +
+                     `<span style="color:#71717a">${p.data.label_type}</span><br/>` +
+                     `Mention: ${(p.data.mentionsInRange||0).toLocaleString('id-ID')} · Degree: ${p.data.degree}`;
+            } else if (p.dataType === 'edge') {
+              return `${p.data.source} ↔ ${p.data.target}<br/>weight: ${p.data.value || p.data.weight}`;
+            }
+            return '';
+          }
+        },
+        series: [{
+          type: 'graph',
+          layout: 'force',
+          data: data.nodes.map(n => ({
+            id: n.id,
+            name: n.label,
+            label_type: KG.meta.type_label[n.type] || n.type,
+            mentionsInRange: n._mentionsInRange,
+            degree: n._degree,
+            symbolSize: Math.max(8, Math.min(40, 6 + Math.sqrt(n._degree) * 4)),
+            itemStyle: { color: n.color },
+            category: n.type,
+            value: n._degree,
+            label: { show: n._degree > 1, fontSize: 9, position: 'right', formatter: v => {
+              const lbl = v.data.name;
+              return lbl.length > 18 ? lbl.slice(0, 18) + '…' : lbl;
+            }}
+          })),
+          edges: data.edges.map(e => ({
+            source: e.source, target: e.target, value: e.weight,
+            lineStyle: { width: Math.max(0.5, Math.min(4, Math.sqrt(e.weight)/4)), opacity: 0.4, color: '#9ca3af' }
+          })),
+          roam: true, draggable: true,
+          force: { repulsion: 220, edgeLength: [40, 120], gravity: 0.08, friction: 0.6 },
+          emphasis: { focus: 'adjacency', label: { show: true, fontSize: 11 }, lineStyle: { width: 2, opacity: 0.9 } },
+          categories: KG.meta.node_types.map(t => ({ name: t })),
+        }],
+      }, true);
+
+      // Click handler
+      KG_CHART.off('click');
+      KG_CHART.on('click', params => {
+        if (params.dataType === 'node') {
+          KG_STATE.selectedNode = params.data.id;
+          updateKGDetail();
+          updateKGPanels();
+        }
+      });
+
+      // Reset selection if filter changed and selected node no longer in scope
+      if (KG_STATE.selectedNode && !data.nodes.find(n => n.id === KG_STATE.selectedNode)) {
+        KG_STATE.selectedNode = null;
+      }
+      updateKGDetail();
+      updateKGPanels();
+    }
+
+    function updateKGDetail() {
+      const c = document.getElementById('kg-detail-content');
+      if (!KG_STATE.selectedNode) {
+        c.innerHTML = `<div class="kg-detail-empty"><p style="font-size:13px;color:var(--text-muted)">Klik node di graph untuk lihat detail.</p></div>`;
+        return;
+      }
+      const n = KG.nodes.find(x => x.id === KG_STATE.selectedNode);
+      if (!n) return;
+      // Find neighbors
+      const data = kgFilteredData();
+      const neighbors = [];
+      data.edges.forEach(e => {
+        if (e.source === n.id) neighbors.push({ id: e.target, weight: e.weight });
+        else if (e.target === n.id) neighbors.push({ id: e.source, weight: e.weight });
+      });
+      neighbors.sort((a,b) => b.weight - a.weight);
+
+      c.innerHTML = `
+        <h4>${escapeHtml(n.label)}</h4>
+        <div class="kg-meta-row">
+          <span class="kg-type-pill" style="background:${n.color}">${escapeHtml(KG.meta.type_label[n.type] || n.type)}</span>
+          <span>Mention: ${(n.mentions||0).toLocaleString('id-ID')}</span>
+        </div>
+        <div class="kg-desc">${escapeHtml(n.description || '')}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-top:8px">
+          Top neighbors (${neighbors.length})
+        </div>
+        <ul class="kg-neighbors-list">
+          ${neighbors.slice(0,12).map(nb => {
+            const nbNode = KG.nodes.find(x => x.id === nb.id);
+            const lbl = nbNode ? nbNode.label : nb.id;
+            return `<li data-id="${nb.id}">
+              <span>${escapeHtml(lbl)}</span>
+              <span class="weight">${nb.weight.toLocaleString('id-ID')}</span>
+            </li>`;
+          }).join('')}
+        </ul>
+        <button class="kg-btn" style="margin-top:8px" id="kg-clear-sel">↺ Kembali ke mode default</button>`;
+
+      c.querySelectorAll('.kg-neighbors-list li').forEach(li => {
+        li.addEventListener('click', () => {
+          KG_STATE.selectedNode = li.dataset.id;
+          updateKGDetail();
+          updateKGPanels();
+        });
+      });
+      document.getElementById('kg-clear-sel').addEventListener('click', () => {
+        KG_STATE.selectedNode = null;
+        updateKGDetail();
+        updateKGPanels();
+      });
+    }
+
+    function updateKGPanels() {
+      const data = kgFilteredData();
+      const selected = KG_STATE.selectedNode;
+
+      // Determine mode
+      if (selected) {
+        // MODE 2: node selected
+        const n = KG.nodes.find(x => x.id === selected);
+        const neighbors = [];
+        data.edges.forEach(e => {
+          if (e.source === selected) neighbors.push({ id: e.target, weight: e.weight, type: e.type });
+          else if (e.target === selected) neighbors.push({ id: e.source, weight: e.weight, type: e.type });
+        });
+        neighbors.sort((a,b) => b.weight - a.weight);
+
+        // Table: connected entities
+        document.getElementById('kg-table-title').textContent = `📋 Connected entities — ${n.label} (Mode 2)`;
+        const rows = neighbors.slice(0,30).map(nb => {
+          const nbNode = KG.nodes.find(x => x.id === nb.id);
+          return {
+            name: nbNode ? nbNode.label : nb.id,
+            type: nbNode ? (KG.meta.type_label[nbNode.type] || nbNode.type) : '—',
+            weight: nb.weight,
+            mentions: nbNode ? (nbNode.mentions || 0) : 0,
+            id: nb.id,
+          };
+        });
+        renderKGTable(rows, ['Connected', 'Type', 'Edge weight', 'Total mentions'], ['name','type','weight','mentions']);
+
+        // Bar: top neighbors by weight
+        document.getElementById('kg-bar-title').textContent = `📊 Top 15 connections — ${n.label}`;
+        renderKGBar(rows.slice(0,15), 'name', 'weight', 'Edge weight');
+
+        // Timeline: monthly trajectory of selected node
+        document.getElementById('kg-timeline-title').textContent = `📈 Monthly mention — ${n.label}`;
+        const months = Object.keys(n.monthly || {}).sort();
+        renderKGTimeline(months, [{ name: n.label, color: n.color, data: months.map(m => n.monthly[m]) }]);
+
+      } else {
+        // MODE 1: default
+        document.getElementById('kg-table-title').textContent = '📋 Top node dalam scope (Mode 1: default)';
+        const rows = data.nodes.slice().sort((a,b) => b._degree - a._degree).slice(0,30).map(n => ({
+          name: n.label, type: KG.meta.type_label[n.type]||n.type,
+          mentions: n._mentionsInRange, degree: n._degree, id: n.id,
+        }));
+        renderKGTable(rows, ['Name', 'Type', 'Mentions', 'Degree'], ['name','type','mentions','degree']);
+
+        document.getElementById('kg-bar-title').textContent = '📊 Top 15 by degree';
+        renderKGBar(rows.slice(0,15), 'name', 'degree', 'Degree (n koneksi)');
+
+        document.getElementById('kg-timeline-title').textContent = '📈 Total mention bulanan (top 5 nodes by degree)';
+        const top5 = data.nodes.slice().sort((a,b) => b._degree - a._degree).filter(n => Object.keys(n.monthly||{}).length > 0).slice(0,5);
+        const allMonths = new Set();
+        top5.forEach(n => Object.keys(n.monthly||{}).forEach(m => allMonths.add(m)));
+        const months = Array.from(allMonths).sort();
+        const series = top5.map(n => ({
+          name: n.label, color: n.color,
+          data: months.map(m => (n.monthly||{})[m] || 0),
+        }));
+        renderKGTimeline(months, series);
+      }
+    }
+
+    function renderKGTable(rows, headers, fields) {
+      const w = document.getElementById('kg-table-wrapper');
+      if (!rows.length) { w.innerHTML = '<p style="padding:20px;color:var(--text-muted)">No data dalam scope.</p>'; return; }
+      const fmt = (v) => typeof v === 'number' ? v.toLocaleString('id-ID') : escapeHtml(String(v ?? ''));
+      w.innerHTML = `<table class="kg-table">
+        <thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${rows.map(r => `<tr data-id="${escapeHtml(r.id || '')}">
+            ${fields.map((f, i) => {
+              const v = r[f];
+              const cls = (typeof v === 'number') ? 'num' : '';
+              return `<td class="${cls}">${fmt(v)}</td>`;
+            }).join('')}
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+      w.querySelectorAll('tbody tr').forEach(tr => {
+        tr.addEventListener('click', () => {
+          const id = tr.dataset.id;
+          if (id && KG.nodes.find(x => x.id === id)) {
+            KG_STATE.selectedNode = id;
+            updateKGDetail();
+            updateKGPanels();
+          }
+        });
+      });
+    }
+
+    function renderKGBar(rows, labelField, valueField, valueName) {
+      if (!rows.length) { KG_BAR.clear(); return; }
+      KG_BAR.setOption({
+        animation: false,
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: 4, right: 24, top: 8, bottom: 8, containLabel: true },
+        xAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { type: 'dashed' } } },
+        yAxis: { type: 'category', data: rows.slice().reverse().map(r => r[labelField]), axisTick: { show: false },
+                 axisLabel: { fontSize: 11, formatter: v => v.length > 28 ? v.slice(0,28)+'…' : v } },
+        series: [{
+          type: 'bar', name: valueName,
+          data: rows.slice().reverse().map(r => r[valueField]),
+          itemStyle: { color: '#2563eb' },
+          label: { show: true, position: 'right', fontSize: 11, formatter: p => p.value.toLocaleString('id-ID') },
+          barWidth: '60%',
+        }],
+      }, true);
+    }
+
+    function renderKGTimeline(months, series) {
+      if (!months.length) { KG_TIMELINE.clear(); return; }
+      KG_TIMELINE.setOption({
+        animation: false,
+        tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+        legend: { top: 0, textStyle: { fontSize: 11 } },
+        grid: { left: 8, right: 24, top: 34, bottom: 8, containLabel: true },
+        xAxis: { type: 'category', data: months, axisLabel: { fontSize: 10 } },
+        yAxis: { type: 'value' },
+        series: series.map(s => ({
+          name: s.name, type: 'line', smooth: true, symbol: 'circle', symbolSize: 5,
+          itemStyle: { color: s.color }, lineStyle: { color: s.color, width: 2 },
+          data: s.data,
+        })),
+      }, true);
     }
 
     // ====== Stories Tab ======
