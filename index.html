@@ -1664,6 +1664,28 @@
         </div>
       </div>
 
+      <!-- CROSS-ANALYSIS: Sentiment × Topic -->
+      <div class="card" style="margin-top:14px">
+        <h3>🔀 Cross: Sentiment × Topic (per platform aktif)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Untuk tiap topic LDA, breakdown sentiment label di dokumen yang
+          dominan ke topic tsb. <em>Operational</em>: identifikasi topik
+          yang paling memicu reaksi negatif vs supportive.
+        </p>
+        <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+          <table class="articles" id="cross-senttopic-table">
+            <thead><tr>
+              <th>#</th><th>Topic</th><th>n docs</th>
+              <th style="color:#16a34a">% Pos</th>
+              <th style="color:#9ca3af">% Neu</th>
+              <th style="color:#dc2626">% Neg</th>
+              <th>Net</th><th>Bar</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card" style="margin-top:14px">
         <h3>🎯 Per-entity sentiment (top 30, aspect-bound)</h3>
         <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
@@ -1776,6 +1798,29 @@
         </div>
       </div>
 
+      <!-- CROSS-ANALYSIS: Bot × Hate intersection -->
+      <div class="card" style="margin-top:14px">
+        <h3>🔀 Cross: Bot ∩ Hate Speech — Dual-Flagged Watch List</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Akun yang <strong>bot-flagged AND hate-rate-high</strong>. Composite
+          <code>threat_score = 0.5 × bot_score + 0.5 × hate_rate</code>.
+          <em>Highest operational priority</em> — coordinated + toxic.
+        </p>
+        <div id="cross-bothate-info" style="font-size:12px;color:#6b7280;margin-bottom:8px"></div>
+        <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
+          <table class="articles" id="cross-bothate-table">
+            <thead><tr>
+              <th>#</th><th>Account</th>
+              <th>Threat</th>
+              <th>Bot Score</th><th>Template</th><th>Burst</th>
+              <th>Hate count</th><th>Hate rate</th>
+              <th>Activity</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- swarm card continues below -->
       <div class="card" style="margin-top:14px">
         <h3>🌊 Coordinated swarms — content amplification waves</h3>
@@ -1836,6 +1881,17 @@
         <div id="hate-samples"></div>
       </div>
 
+      <!-- CROSS-ANALYSIS: Hate × Event Temporal -->
+      <div class="card" style="margin-top:14px">
+        <h3>🔀 Cross: Hate rate × Event temporal overlay</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Monthly hate rate (bar + %) overlaid dengan total event mentions
+          (LDA EVT entities). <em>Operational</em>: spot bulan dimana hate
+          spike berbarengan event burst — momentum kritik publik.
+        </p>
+        <div id="chart-hate-event-overlay" style="height:380px"></div>
+      </div>
+
       <!-- hate accounts continues -->
       <div class="card" style="margin-top:14px">
         <h3>👥 Top hate-flagged accounts (hate_rate ≥20%, n≥5)</h3>
@@ -1892,6 +1948,19 @@
       <div class="card" style="margin-top:14px">
         <h3>📈 Monthly trend (kebijakan aktif)</h3>
         <div id="chart-stance-monthly" style="height:340px"></div>
+      </div>
+
+      <!-- CROSS-ANALYSIS: Stance × Sentiment co-validation -->
+      <div class="card" style="margin-top:14px">
+        <h3>🔀 Cross: Stance × BERT Sentiment (kebijakan aktif)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          2D matrix stance NLI × sentiment BERT. <strong>Pro+Neg</strong> =
+          positive stance dengan negative tone (mis. "akhirnya pemerintah ngakui gagal").
+          <strong>Kontra+Pos</strong> = negative stance dengan positive language
+          (signal sarkasme). <em>Note</em>: matrix dari sample subset (3 per stance);
+          untuk full doc-level cross perlu re-aggregate raw.
+        </p>
+        <div id="cross-stance-sentiment-matrix"></div>
       </div>
 
       <div class="card" style="margin-top:14px">
@@ -4789,6 +4858,13 @@
       }
     }
 
+    // ====== Cross-Analyses (Tier 1) ======
+    let CROSS = null;
+    async function ensureCross() {
+      if (!CROSS) CROSS = await loadData('cross_analyses');
+      return CROSS;
+    }
+
     // ====== Sentiment (ABSA hybrid) ======
     let SENTIMENT = null;
     const SENTIMENT_COLORS = { positive: '#16a34a', neutral: '#9ca3af', negative: '#dc2626' };
@@ -4851,6 +4927,36 @@
       renderSentimentSamples();
       renderSentimentEntityTable();
       renderSentimentExtremes();
+      renderCrossSentTopic();
+    }
+
+    async function renderCrossSentTopic() {
+      await ensureCross();
+      if (!CROSS) return;
+      const rows = (CROSS.sentiment_x_topic || {})[SENTIMENT_STATE.source] || [];
+      const tbody = document.querySelector('#cross-senttopic-table tbody');
+      if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#9ca3af">No data</td></tr>'; return; }
+      tbody.innerHTML = rows.map((r, i) => {
+        const posW = Math.round(r.pos_pct * 100);
+        const negW = Math.round(r.neg_pct * 100);
+        const neuW = 100 - posW - negW;
+        const bar = `<div style="display:flex;height:14px;border-radius:3px;overflow:hidden;width:140px;background:#f3f4f6">
+          <div style="width:${posW}%;background:${SENTIMENT_COLORS.positive}"></div>
+          <div style="width:${neuW}%;background:${SENTIMENT_COLORS.neutral}"></div>
+          <div style="width:${negW}%;background:${SENTIMENT_COLORS.negative}"></div>
+        </div>`;
+        const netColor = r.net > 0.05 ? SENTIMENT_COLORS.positive : r.net < -0.05 ? SENTIMENT_COLORS.negative : SENTIMENT_COLORS.neutral;
+        return `<tr>
+          <td>${i + 1}</td>
+          <td><strong>T${r.topic_id}</strong> <span style="color:#6b7280">${escapeHtml(r.label_auto)}</span></td>
+          <td style="text-align:right">${fmt(r.n_docs)}</td>
+          <td style="text-align:right;color:${SENTIMENT_COLORS.positive}">${(r.pos_pct*100).toFixed(0)}%</td>
+          <td style="text-align:right;color:${SENTIMENT_COLORS.neutral}">${(r.neu_pct*100).toFixed(0)}%</td>
+          <td style="text-align:right;color:${SENTIMENT_COLORS.negative}">${(r.neg_pct*100).toFixed(0)}%</td>
+          <td style="text-align:right;color:${netColor};font-weight:bold">${r.net>=0?'+':''}${r.net.toFixed(2)}</td>
+          <td>${bar}</td>
+        </tr>`;
+      }).join('');
     }
 
     function renderSentimentSarcasm() {
@@ -5066,6 +5172,35 @@
       document.getElementById('botc-kpi-row').innerHTML = kpi;
       renderBotCoordTable();
       renderBotCoordSwarms();
+      renderCrossBotHate();
+    }
+
+    async function renderCrossBotHate() {
+      await ensureCross();
+      if (!CROSS) return;
+      const plat = BOTC_STATE.source;
+      const data = (CROSS.bot_x_hate || {})[plat];
+      const info = document.getElementById('cross-bothate-info');
+      const tbody = document.querySelector('#cross-bothate-table tbody');
+      if (!data) { info.innerHTML = ''; tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#9ca3af">No intersection for this platform</td></tr>'; return; }
+      info.innerHTML = `<strong>${data.n_intersection}</strong> dual-flagged accounts (bot ∩ hate) — top 30 by threat_score.
+        Total bot pool: ${data.n_bot} · Hate-flagged pool: ${data.n_hate_flagged}.`;
+      const rows = data.accounts || [];
+      if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#9ca3af">Empty intersection</td></tr>'; return; }
+      tbody.innerHTML = rows.map((r, i) => {
+        const tCol = r.threat_score >= 0.7 ? '#dc2626' : (r.threat_score >= 0.5 ? '#ea580c' : '#facc15');
+        return `<tr>
+          <td>${i + 1}</td>
+          <td style="font-family:monospace;font-size:11px"><strong>${escapeHtml(r.author)}</strong></td>
+          <td style="text-align:right;color:${tCol};font-weight:bold">${r.threat_score.toFixed(2)}</td>
+          <td style="text-align:right">${r.bot_score.toFixed(2)}</td>
+          <td style="text-align:right">${r.template_score.toFixed(2)}</td>
+          <td style="text-align:right">${r.burst_score.toFixed(2)}</td>
+          <td style="text-align:right;color:#dc2626">${r.hate_count}/${r.hate_total}</td>
+          <td style="text-align:right;color:#dc2626;font-weight:bold">${(r.hate_rate*100).toFixed(0)}%</td>
+          <td style="text-align:right;color:#6b7280">${r.activity}</td>
+        </tr>`;
+      }).join('');
     }
 
     function renderBotCoordTable() {
@@ -5169,6 +5304,43 @@
       renderHateMonthly();
       renderHateSamples();
       renderHateAccounts();
+      renderCrossHateEvent();
+    }
+
+    async function renderCrossHateEvent() {
+      await ensureCross();
+      if (!CROSS) return;
+      const data = (CROSS.hate_x_event_temporal || {}).per_platform || {};
+      const rows = data[HATE_STATE.source] || [];
+      const el = document.getElementById('chart-hate-event-overlay');
+      if (!el) return;
+      if (!rows.length) { el.innerHTML = '<div style="padding:30px;text-align:center;color:#9ca3af">No data</div>'; return; }
+      const months = rows.map(r => r.month);
+      const hateData = rows.map(r => r.hate);
+      const rateData = rows.map(r => Math.round(r.rate * 1000) / 10);
+      const eventData = rows.map(r => r.event_total);
+      const chart = echarts.init(el);
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'cross' },
+                   formatter: ps => {
+                     const i = ps[0].dataIndex;
+                     const r = rows[i];
+                     return `${r.month}<br/>HATE: ${r.hate}/${r.total} (${(r.rate*100).toFixed(1)}%)<br/>Event mentions: ${r.event_total}`;
+                   }},
+        legend: { top: 0, textStyle: { fontSize: 11 } },
+        grid: { left: 8, right: 48, top: 36, bottom: 40, containLabel: true },
+        xAxis: { type: 'category', data: months, axisLabel: { rotate: 45, fontSize: 10 } },
+        yAxis: [
+          { type: 'value', name: 'HATE count', position: 'left', axisLabel: { fontSize: 10 } },
+          { type: 'value', name: '% HATE / events', position: 'right', axisLabel: { fontSize: 10, formatter: '{value}' } },
+        ],
+        series: [
+          { name: 'HATE count', type: 'bar', data: hateData, itemStyle: { color: '#dc2626' } },
+          { name: '% HATE', type: 'line', yAxisIndex: 1, smooth: true, data: rateData, itemStyle: { color: '#ea580c' }, lineStyle: { width: 3 } },
+          { name: 'Event mentions', type: 'line', yAxisIndex: 1, smooth: true, data: eventData, itemStyle: { color: '#3b82f6' }, lineStyle: { width: 2, type: 'dashed' } },
+        ],
+      }, true);
+      window.addEventListener('resize', () => chart.resize());
     }
 
     function renderHateSamples() {
@@ -5354,6 +5526,47 @@
       renderStanceDonut();
       renderStanceMonthly();
       renderStanceSamples();
+      renderCrossStanceSentiment();
+    }
+
+    async function renderCrossStanceSentiment() {
+      await ensureCross();
+      if (!CROSS) return;
+      const data = (CROSS.stance_x_sentiment || {})[STANCE_STATE.source] || {};
+      const m = data[STANCE_STATE.kebijakan];
+      const el = document.getElementById('cross-stance-sentiment-matrix');
+      if (!m || !m.matrix) { el.innerHTML = '<div style="color:#9ca3af;padding:12px">No matrix data</div>'; return; }
+      const matrix = m.matrix;
+      const stances = ['pro','netral','kontra'];
+      const sents = ['positive','neutral','negative'];
+      const sentColor = { positive: '#16a34a', neutral: '#9ca3af', negative: '#dc2626' };
+      const stanceColor = { pro: '#16a34a', netral: '#6366f1', kontra: '#dc2626' };
+      // Build 3x3 grid table
+      let html = `<table style="border-collapse:collapse;font-size:12px;margin-bottom:8px">
+        <thead><tr>
+          <th style="padding:8px;background:#f9fafb;text-align:left">↓ Stance \\ BERT Sentiment →</th>
+          ${sents.map(s => `<th style="padding:8px;background:#f9fafb;color:${sentColor[s]}">${s}</th>`).join('')}
+        </tr></thead><tbody>`;
+      for (const st of stances) {
+        html += `<tr><td style="padding:8px;font-weight:bold;color:${stanceColor[st]}">${st}</td>`;
+        for (const sent of sents) {
+          const v = matrix[st]?.[sent] || 0;
+          // Highlight notable cells
+          const isWarn = (st === 'pro' && sent === 'negative') || (st === 'kontra' && sent === 'positive');
+          const bg = v === 0 ? '#fff' : (isWarn ? '#fef3c7' : '#f0fdf4');
+          const fontWeight = isWarn && v > 0 ? 'bold' : 'normal';
+          html += `<td style="padding:12px;text-align:center;background:${bg};border:1px solid #e5e7eb;font-weight:${fontWeight}">${v}</td>`;
+        }
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
+      if (m.notes && m.notes.length) {
+        html += '<div style="font-size:11px;color:#854d0e;background:#fef3c7;padding:8px 12px;border-radius:4px;border-left:3px solid #ca8a04">';
+        html += '<strong>Notable cells:</strong> ' + m.notes.join(' · ');
+        html += '</div>';
+      }
+      html += `<div style="font-size:10px;color:#9ca3af;margin-top:6px">Total samples in matrix: ${m.n_total_samples}. Yellow cells = co-validation flags.</div>`;
+      el.innerHTML = html;
     }
 
     function renderStanceDonut() {
