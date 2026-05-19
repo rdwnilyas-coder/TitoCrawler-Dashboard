@@ -6718,7 +6718,8 @@
         case 'bar_h':
         case 'stacked_bar':
         case 'line':
-        case 'network': {
+        case 'network':
+        case 'geo_intensity': {
           // Chart — needs ECharts init after mount
           // Donut diberi class extra agar 2 donut beruntun render side-by-side (CSS desktop)
           let cardCls = (ev.type === 'donut') ? ' story-evidence-donut' : '';
@@ -6770,14 +6771,21 @@
         const data = itemColors
           ? values.map((v, i) => ({ value: v, itemStyle: { color: itemColors[i] || ev.color || '#1f77b4' } }))
           : values;
+        // Label area lebar kalau ev.label_width diset (untuk teks panjang)
+        const labelW = ev.label_width || 0; // 0 = auto
+        const yAxisLbl = labelW > 0
+          ? { fontSize: 11, width: labelW, overflow: 'break', interval: 0 }
+          : { fontSize: 11 };
+        const gridLeft = labelW > 0 ? Math.max(labelW + 20, 8) : 8;
         opt = {
           ...baseOpt,
           tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-          grid: { left: 8, right: 30, top: 8, bottom: 8, containLabel: true },
+          grid: { left: gridLeft, right: 30, top: 8, bottom: 8, containLabel: true },
           xAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { type: 'dashed' } } },
           yAxis: {
             type: 'category', data: ev.labels || [],
             inverse: true, axisTick: { show: false },
+            axisLabel: yAxisLbl,
           },
           series: [{
             type: 'bar',
@@ -6791,6 +6799,39 @@
                        if (v >= 10000) return (v/1000).toFixed(1) + 'K';
                        return v.toLocaleString('id-ID');
                      } },
+          }],
+        };
+      } else if (ev.type === 'geo_intensity') {
+        // Bar_h dengan visualMap green gradient — visualisasi distribusi geografis
+        // (substitute peta — provinsi sorted desc, gradasi hijau by intensitas)
+        const values = ev.values || [];
+        const maxV = Math.max(...values, 1);
+        opt = {
+          ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                     formatter: p => `<b>${p[0].name}</b><br/>${(p[0].value || 0).toLocaleString('id-ID')} mention` },
+          visualMap: {
+            min: 0, max: maxV,
+            orient: 'vertical', right: 12, top: 'middle',
+            inRange: { color: ['#e5e7eb', '#bbf7d0', '#86efac', '#22c55e', '#15803d', '#14532d'] },
+            text: ['Tinggi', 'Rendah'],
+            calculable: false,
+            itemWidth: 12, itemHeight: 120,
+            textStyle: { fontSize: 10 },
+          },
+          grid: { left: 8, right: 80, top: 8, bottom: 8, containLabel: true },
+          xAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { type: 'dashed' } } },
+          yAxis: {
+            type: 'category', data: ev.labels || [],
+            inverse: true, axisTick: { show: false },
+            axisLabel: { fontSize: 11 },
+          },
+          series: [{
+            type: 'bar',
+            data: values,
+            barWidth: '70%',
+            label: { show: true, position: 'right', fontSize: 11,
+                     formatter: v => (v.value || 0).toLocaleString('id-ID') },
           }],
         };
       } else if (ev.type === 'stacked_bar') {
