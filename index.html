@@ -319,6 +319,7 @@
     <button data-tab="sentiment">💚💛💔 Sentiment</button>
     <button data-tab="bot-coord">🤖 Bot &amp; Coordination</button>
     <button data-tab="hate">🚨 Hate Speech</button>
+    <button data-tab="stance">⚖️ Stance per Kebijakan</button>
     <button data-tab="youtube">🎥 YouTube</button>
     <button data-tab="yt-comments">💬 YT Comments</button>
     <button data-tab="tiktok">🎵 TikTok</button>
@@ -1835,6 +1836,7 @@
         <div id="hate-samples"></div>
       </div>
 
+      <!-- hate accounts continues -->
       <div class="card" style="margin-top:14px">
         <h3>👥 Top hate-flagged accounts (hate_rate ≥20%, n≥5)</h3>
         <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
@@ -1847,6 +1849,58 @@
             <tbody></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- Tab: Stance per Kebijakan (NLI zero-shot) -->
+    <section class="tab-content" id="tab-stance">
+      <div class="card" style="margin-bottom:14px">
+        <h3 id="stance-title">⚖️ Stance per Kebijakan Tito Karnavian</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          Model: <code>MoritzLaurer/mDeBERTa-v3-base-mnli-xnli</code> (multilingual NLI, zero-shot).
+          Per kebijakan: filter dokumen yang mention Tito + keyword kebijakan, lalu klasifikasi
+          ke <strong style="color:#16a34a">pro</strong>,
+          <strong style="color:#dc2626">kontra</strong>, atau
+          <strong style="color:#6366f1">netral/informatif</strong> terhadap pemerintah Tito.
+          Berbeda dari sentiment — stance lebih actionable untuk policy monitoring.
+          <em>Caveat</em>: hipotesis template generik ("pro pemerintah Tito"), bukan kebijakan-specific.
+        </p>
+        <div id="stance-kpi-row" class="kpi-row" style="margin-top:10px"></div>
+      </div>
+
+      <div class="filters" style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text-muted)"><strong>Platform:</strong></label>
+        <select id="stance-source"></select>
+        <label style="font-size:12px;color:var(--text-muted);margin-left:14px"><strong>Kebijakan:</strong></label>
+        <select id="stance-kebijakan"></select>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>🍩 Pro / Kontra / Netral (kebijakan aktif)</h3>
+          <div class="chart chart-tall" id="chart-stance-donut"></div>
+        </div>
+        <div class="card">
+          <h3>📊 Stance per kebijakan (platform aktif)</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+            Stacked bar pro/netral/kontra per kebijakan untuk platform yang dipilih.
+          </p>
+          <div class="chart chart-tall" id="chart-stance-by-kebijakan"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h3>📈 Monthly trend (kebijakan aktif)</h3>
+        <div id="chart-stance-monthly" style="height:340px"></div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h3>💬 Sample kalimat per stance (kebijakan aktif)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          3 kalimat per stance dari klasifikasi model. Header tiap card juga tampilkan
+          <em>BERT sentiment</em> dari Stage 1 ABSA untuk cross-check.
+        </p>
+        <div id="stance-samples"></div>
       </div>
     </section>
   </main>
@@ -1951,7 +2005,7 @@
 
     // ====== Tab navigation ======
     const tabsRendered = { overview: false, reporters: false, articles: false,
-                           ner: false, topic: false, 'sna-socmed': false, sentiment: false, 'bot-coord': false, hate: false,
+                           ner: false, topic: false, 'sna-socmed': false, sentiment: false, 'bot-coord': false, hate: false, stance: false,
                            youtube: false, 'yt-comments': false,
                            tiktok: false, 'tt-comments': false,
                            instagram: false, 'ig-comments': false,
@@ -1982,6 +2036,7 @@
         if (name === 'sentiment') await renderSentiment();
         if (name === 'bot-coord') await renderBotCoord();
         if (name === 'hate') await renderHate();
+        if (name === 'stance') await renderStance();
         tabsRendered[name] = true;
       }
       // Resize charts after tab shown (ECharts needs visible container)
@@ -5223,6 +5278,189 @@
           <td style="text-align:right;color:${col};font-weight:bold">${(r.hate_rate*100).toFixed(1)}%</td>
         </tr>`;
       }).join('');
+    }
+
+    // ====== Stance per Kebijakan ======
+    let STANCE = null;
+    const STANCE_COLORS = { pro: '#16a34a', kontra: '#dc2626', netral: '#6366f1' };
+    const STANCE_STATE = { source: null, kebijakan: null };
+
+    async function renderStance() {
+      STANCE = await loadData('stance_resume');
+      if (!STANCE || !STANCE.sources) {
+        document.getElementById('tab-stance').innerHTML =
+          '<div class="card"><h3>Stance data belum di-generate</h3>' +
+          '<p>Run <code>python analysis/code/analyze_stance.py --source all</code></p></div>';
+        return;
+      }
+      const srcSel = document.getElementById('stance-source');
+      const kebSel = document.getElementById('stance-kebijakan');
+      const sources = Object.keys(STANCE.sources);
+      const labels = { news:'📰 News', youtube:'🎥 YouTube', twitter:'🐦 Twitter',
+                       tiktok:'🎵 TikTok', instagram:'📷 Instagram', facebook:'📘 Facebook' };
+      srcSel.innerHTML = sources.map(s => `<option value="${s}">${labels[s] || s}</option>`).join('');
+      if (!srcSel.dataset.bound) {
+        srcSel.dataset.bound = '1';
+        srcSel.addEventListener('change', () => renderStanceSource(srcSel.value));
+      }
+      if (!kebSel.dataset.bound) {
+        kebSel.dataset.bound = '1';
+        kebSel.addEventListener('change', () => renderStanceKebijakan(kebSel.value));
+      }
+      renderStanceSource(sources[0] || 'news');
+    }
+
+    function renderStanceSource(source) {
+      STANCE_STATE.source = source;
+      const data = STANCE.sources[source] || {};
+      const kebijakans = Object.keys(data);
+      const kebSel = document.getElementById('stance-kebijakan');
+      kebSel.innerHTML = kebijakans.map(k => `<option value="${k}">${k}</option>`).join('');
+      // Default kebijakan = first or one with most data
+      let best = kebijakans[0];
+      let bestN = 0;
+      for (const k of kebijakans) {
+        const n = data[k]?.meta?.n_docs_classified || 0;
+        if (n > bestN) { bestN = n; best = k; }
+      }
+      kebSel.value = best;
+      renderStanceByKebijakan();
+      renderStanceKebijakan(best);
+    }
+
+    function renderStanceKebijakan(kebijakan) {
+      STANCE_STATE.kebijakan = kebijakan;
+      const data = STANCE.sources[STANCE_STATE.source]?.[kebijakan];
+      if (!data) {
+        document.getElementById('stance-kpi-row').innerHTML =
+          '<div style="padding:12px;color:#9ca3af">Tidak ada dokumen untuk kebijakan ini di platform aktif.</div>';
+        ['chart-stance-donut','chart-stance-monthly'].forEach(id => {
+          const el = document.getElementById(id); if (el) el.innerHTML = '';
+        });
+        document.getElementById('stance-samples').innerHTML = '';
+        return;
+      }
+      const m = data.meta;
+      document.getElementById('stance-title').textContent =
+        `⚖️ Stance — ${kebijakan} (${STANCE_STATE.source})`;
+      const kpi = [
+        ['Kebijakan', kebijakan],
+        ['n docs', fmt(m.n_docs_classified)],
+        ['Pro', `<span style="color:${STANCE_COLORS.pro}">${fmt(m.pro)} (${(m.pro_pct*100).toFixed(1)}%)</span>`],
+        ['Kontra', `<span style="color:${STANCE_COLORS.kontra}">${fmt(m.kontra)} (${(m.kontra_pct*100).toFixed(1)}%)</span>`],
+        ['Netral', `<span style="color:${STANCE_COLORS.netral}">${fmt(m.netral)} (${(m.netral_pct*100).toFixed(1)}%)</span>`],
+      ].map(([k,v]) => `<div class="kpi"><div class="kpi-label">${k}</div><div class="kpi-value">${v}</div></div>`).join('');
+      document.getElementById('stance-kpi-row').innerHTML = kpi;
+      renderStanceDonut();
+      renderStanceMonthly();
+      renderStanceSamples();
+    }
+
+    function renderStanceDonut() {
+      const data = STANCE.sources[STANCE_STATE.source][STANCE_STATE.kebijakan];
+      const m = data.meta;
+      const chart = echarts.init(document.getElementById('chart-stance-donut'));
+      chart.setOption({
+        tooltip: { trigger: 'item', formatter: p => `<strong>${p.name}</strong><br/>${fmt(p.value)} (${p.percent.toFixed(1)}%)` },
+        legend: { top: 6, left: 'center', textStyle: { fontSize: 11 } },
+        series: [{
+          type: 'pie', radius: ['45%', '70%'], center: ['50%', '58%'],
+          itemStyle: { borderColor: '#fff', borderWidth: 2 },
+          label: { fontSize: 12, formatter: '{b}\n{c} ({d}%)' },
+          data: [
+            { value: m.pro,    name: 'pro',    itemStyle: { color: STANCE_COLORS.pro } },
+            { value: m.netral, name: 'netral', itemStyle: { color: STANCE_COLORS.netral } },
+            { value: m.kontra, name: 'kontra', itemStyle: { color: STANCE_COLORS.kontra } },
+          ],
+        }],
+      }, true);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderStanceByKebijakan() {
+      const data = STANCE.sources[STANCE_STATE.source] || {};
+      const kebs = Object.keys(data);
+      const el = document.getElementById('chart-stance-by-kebijakan');
+      if (!kebs.length) { el.innerHTML = '<div style="padding:30px;text-align:center;color:#9ca3af">Tidak ada data</div>'; return; }
+      const labels = kebs.map(k => k.length > 30 ? k.slice(0, 28) + '…' : k);
+      const chart = echarts.init(el);
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                   formatter: ps => {
+                     const idx = ps[0].dataIndex;
+                     const m = data[kebs[idx]].meta;
+                     return `<strong>${kebs[idx]}</strong><br/>n=${m.n_docs_classified}<br/>pro=${m.pro} kontra=${m.kontra} netral=${m.netral}`;
+                   }},
+        legend: { top: 0, textStyle: { fontSize: 10 } },
+        grid: { left: 8, right: 24, top: 32, bottom: 70, containLabel: true },
+        xAxis: { type: 'category', data: labels, axisLabel: { rotate: 30, fontSize: 9, interval: 0 } },
+        yAxis: { type: 'value', name: 'docs' },
+        series: [
+          { name: 'pro', type: 'bar', stack: 's', data: kebs.map(k => data[k].meta.pro), itemStyle: { color: STANCE_COLORS.pro } },
+          { name: 'netral', type: 'bar', stack: 's', data: kebs.map(k => data[k].meta.netral), itemStyle: { color: STANCE_COLORS.netral } },
+          { name: 'kontra', type: 'bar', stack: 's', data: kebs.map(k => data[k].meta.kontra), itemStyle: { color: STANCE_COLORS.kontra } },
+        ],
+      }, true);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderStanceMonthly() {
+      const data = STANCE.sources[STANCE_STATE.source][STANCE_STATE.kebijakan];
+      const monthly = data.monthly || {};
+      const months = Object.keys(monthly).sort();
+      const chart = echarts.init(document.getElementById('chart-stance-monthly'));
+      const proData = months.map(m => (monthly[m] || {}).pro || 0);
+      const netData = months.map(m => (monthly[m] || {}).netral || 0);
+      const konData = months.map(m => (monthly[m] || {}).kontra || 0);
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+        legend: { top: 0, textStyle: { fontSize: 11 } },
+        grid: { left: 8, right: 24, top: 36, bottom: 40, containLabel: true },
+        xAxis: { type: 'category', data: months, axisLabel: { rotate: 45, fontSize: 10 } },
+        yAxis: { type: 'value', name: 'count', axisLabel: { fontSize: 10 } },
+        dataZoom: [{ type: 'inside' }, { type: 'slider', height: 18, bottom: 6 }],
+        series: [
+          { name: 'pro',    type: 'line', smooth: true, data: proData, itemStyle: { color: STANCE_COLORS.pro }, lineStyle: { width: 2 } },
+          { name: 'netral', type: 'line', smooth: true, data: netData, itemStyle: { color: STANCE_COLORS.netral }, lineStyle: { width: 2 } },
+          { name: 'kontra', type: 'line', smooth: true, data: konData, itemStyle: { color: STANCE_COLORS.kontra }, lineStyle: { width: 2 } },
+        ],
+      }, true);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    function renderStanceSamples() {
+      const data = STANCE.sources[STANCE_STATE.source][STANCE_STATE.kebijakan];
+      const samples = data.samples || {};
+      const el = document.getElementById('stance-samples');
+      const blocks = [
+        { key: 'pro', emoji: '✅', label: 'PRO', color: STANCE_COLORS.pro, bg: '#f0fdf4', border: '#86efac' },
+        { key: 'netral', emoji: '⚪', label: 'NETRAL', color: STANCE_COLORS.netral, bg: '#eef2ff', border: '#a5b4fc' },
+        { key: 'kontra', emoji: '❌', label: 'KONTRA', color: STANCE_COLORS.kontra, bg: '#fef2f2', border: '#fca5a5' },
+      ];
+      el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+        ${blocks.map(b => {
+          const items = samples[b.key] || [];
+          const list = items.length
+            ? items.map(s => `
+                <div style="font-size:11.5px;padding:8px 10px;background:#fff;border-radius:4px;margin-bottom:6px;line-height:1.4;border-left:3px solid ${b.color}">
+                  <div style="color:#1f2937">${escapeHtml(s.text)}</div>
+                  <div style="font-size:10px;color:#9ca3af;margin-top:4px">
+                    NLI <strong style="color:${b.color}">${(s.score*100).toFixed(0)}%</strong>
+                    · BERT sentiment: ${s.bert_sentiment || '—'}
+                    · ${s.source_kind || '—'}${s.month ? ' · ' + s.month : ''}
+                  </div>
+                </div>`).join('')
+            : '<div style="color:#9ca3af;font-size:11px;padding:8px">No sample.</div>';
+          return `
+            <div style="background:${b.bg};border:1px solid ${b.border};border-radius:6px;padding:10px 12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <strong style="color:${b.color};font-size:13px">${b.emoji} ${b.label}</strong>
+                <span style="font-size:10px;color:#6b7280">${items.length} samples</span>
+              </div>
+              ${list}
+            </div>`;
+        }).join('')}
+      </div>`;
     }
 
     // ====== Boot ======
