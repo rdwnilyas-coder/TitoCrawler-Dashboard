@@ -161,6 +161,9 @@
       header { padding: 16px; }
       h1 { font-size: 18px; }
       .kpi-card .value { font-size: 18px; }
+    }
+    /* Tablet horizontal + smaller: tetap pakai dropdown (bukan tab list) */
+    @media (max-width: 1280px) {
       nav.tabs { display: none; }
       .tab-mobile { display: flex; }
     }
@@ -4395,6 +4398,18 @@
     async function renderTopic() {
       TOPIC = await loadData('topic_resume');
       TOPIC_INSIGHTS = await loadData('topic_insights');
+      // Load readable labels & inject into TOPIC.sources[*].topics[*].label_readable
+      try {
+        const tl = await fetch('data/topic_labels.json').then(r => r.json());
+        if (TOPIC && TOPIC.sources && tl) {
+          for (const src in TOPIC.sources) {
+            const map = tl[src] || {};
+            (TOPIC.sources[src].topics || []).forEach(t => {
+              t.label_readable = map[String(t.id)] || t.label_auto;
+            });
+          }
+        }
+      } catch (e) { /* fallback to label_auto */ }
       if (!TOPIC || !TOPIC.sources) {
         document.getElementById('tab-topic').innerHTML =
           '<div class="card"><h3>Topic resume belum di-generate</h3>' +
@@ -4457,10 +4472,10 @@
       ].map(([k, v]) => `<div class="kpi"><div class="kpi-label">${k}</div><div class="kpi-value">${v}</div></div>`).join('');
       document.getElementById('topic-kpi-row').innerHTML = kpiHtml;
 
-      // Populate topic picker
+      // Populate topic picker (pakai readable label)
       const pick = document.getElementById('topic-pick');
       pick.innerHTML = data.topics.map(t =>
-        `<option value="${t.id}">T${t.id} — ${t.label_auto}</option>`
+        `<option value="${t.id}">T${t.id} — ${t.label_readable || t.label_auto}</option>`
       ).join('');
       pick.value = '0';
 
@@ -4493,7 +4508,7 @@
       const chart = echarts.init(el);
       const items = data.topics.map(t => ({
         value: t.n_docs,
-        name: `T${t.id} — ${t.label_auto}`,
+        name: `T${t.id} — ${t.label_readable || t.label_auto}`,
         itemStyle: { color: TOPIC_PALETTE[t.id % TOPIC_PALETTE.length] },
         topicId: t.id,
       }));
@@ -4572,7 +4587,7 @@
           : raw;
         const color = TOPIC_PALETTE[t.id % TOPIC_PALETTE.length];
         return {
-          name: `T${t.id} — ${t.label_auto}`,
+          name: `T${t.id} — ${t.label_readable || t.label_auto}`,
           type: 'line',
           stack: 'topic',
           smooth: true,
@@ -4674,7 +4689,7 @@
         const color = TOPIC_PALETTE[t.id % TOPIC_PALETTE.length];
         return `<tr>
           <td><span style="display:inline-block;width:14px;height:14px;background:${color};border-radius:3px;vertical-align:middle"></span> T${t.id}</td>
-          <td style="font-size:12px">${t.label_auto}</td>
+          <td style="font-size:12px"><div>${t.label_readable || t.label_auto}</div><div style="font-size:10px;color:#9ca3af;font-style:italic;margin-top:2px">${t.label_auto}</div></td>
           <td style="text-align:right">${fmt(t.n_docs)}</td>
           <td style="text-align:right">${(t.share * 100).toFixed(1)}%</td>
           <td style="text-align:right">${cohCell}</td>
@@ -4693,16 +4708,22 @@
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af">Tidak ada burst (≥2σ) untuk sumber ini</td></tr>';
         return;
       }
+      // Pakai readable label dari TOPIC.sources[src].topics[id]
+      const readableMap = {};
+      (TOPIC.sources[src]?.topics || []).forEach(t => {
+        readableMap[t.id] = t.label_readable || t.label_auto;
+      });
       tbody.innerHTML = bursts.map(b => {
         const sev = b.z_score >= 3 ? '#dc2626' : (b.z_score >= 2.5 ? '#ea580c' : '#facc15');
         const color = TOPIC_PALETTE[b.topic % TOPIC_PALETTE.length];
+        const readable = readableMap[b.topic] || b.label_auto;
         return `<tr>
           <td style="font-size:12px;white-space:nowrap">${b.month}</td>
           <td><span style="display:inline-block;width:10px;height:10px;background:${color};border-radius:2px;vertical-align:middle"></span> T${b.topic}</td>
           <td style="text-align:right">${fmt(b.count)}</td>
           <td style="text-align:right;color:#6b7280">${fmt(b.baseline)}</td>
           <td style="text-align:right;color:${sev};font-weight:bold">${b.z_score}</td>
-          <td style="font-size:12px">${b.label_auto}</td>
+          <td style="font-size:12px">${readable}</td>
         </tr>`;
       }).join('');
     }
@@ -4717,7 +4738,12 @@
       if (!rows.length) return;
       const el = document.getElementById('chart-topic-groupab');
       const chart = echarts.init(el);
-      const labels = rows.map(r => `T${r.id} — ${r.label_auto}`);
+      // Pakai readable label news kalau tersedia
+      const newsReadable = {};
+      ((TOPIC.sources?.news?.topics) || []).forEach(t => {
+        newsReadable[t.id] = t.label_readable || t.label_auto;
+      });
+      const labels = rows.map(r => `T${r.id} — ${newsReadable[r.id] || r.label_auto}`);
       const aShares = rows.map(r => -r.a_share * 100);  // negative = leans A (left)
       const bShares = rows.map(r => r.b_share * 100);
       chart.setOption({
@@ -4993,7 +5019,7 @@
       const topicMeta = {};
       if (TOPIC && TOPIC.sources && TOPIC.sources[src]) {
         for (const t of (TOPIC.sources[src].topics || [])) {
-          topicMeta[String(t.id)] = { label: t.label_auto, share: t.share, id: t.id };
+          topicMeta[String(t.id)] = { label: t.label_readable || t.label_auto, share: t.share, id: t.id };
         }
       }
 
@@ -5131,6 +5157,14 @@
       const rows = (CROSS.sentiment_x_topic || {})[SENTIMENT_STATE.source] || [];
       const tbody = document.querySelector('#cross-senttopic-table tbody');
       if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#9ca3af">No data</td></tr>'; return; }
+      // Pakai readable label dari TOPIC kalau tersedia
+      const readableMap = {};
+      const src = SENTIMENT_STATE.source;
+      if (TOPIC && TOPIC.sources && TOPIC.sources[src]) {
+        (TOPIC.sources[src].topics || []).forEach(t => {
+          readableMap[t.id] = t.label_readable || t.label_auto;
+        });
+      }
       tbody.innerHTML = rows.map((r, i) => {
         const posW = Math.round(r.pos_pct * 100);
         const negW = Math.round(r.neg_pct * 100);
@@ -5141,9 +5175,10 @@
           <div style="width:${negW}%;background:${SENTIMENT_COLORS.negative}"></div>
         </div>`;
         const netColor = r.net > 0.05 ? SENTIMENT_COLORS.positive : r.net < -0.05 ? SENTIMENT_COLORS.negative : SENTIMENT_COLORS.neutral;
+        const readable = readableMap[r.topic_id] || r.label_auto;
         return `<tr>
           <td>${i + 1}</td>
-          <td><strong>T${r.topic_id}</strong> <span style="color:#6b7280">${escapeHtml(r.label_auto)}</span></td>
+          <td><strong>T${r.topic_id}</strong> <span style="color:#6b7280">${escapeHtml(readable)}</span></td>
           <td style="text-align:right">${fmt(r.n_docs)}</td>
           <td style="text-align:right;color:${SENTIMENT_COLORS.positive}">${(r.pos_pct*100).toFixed(0)}%</td>
           <td style="text-align:right;color:${SENTIMENT_COLORS.neutral}">${(r.neu_pct*100).toFixed(0)}%</td>

@@ -1,0 +1,72 @@
+{
+  "_meta": {
+    "description": "Readable Indonesian sentence labels untuk 54 topic LDA. Dipakai di tab Topic Modelling + Knowledge Graph.",
+    "generated_by": "manual curation berdasarkan top_words + share + n_docs"
+  },
+  "news": {
+    "0": "Tata kelola pemerintahan daerah: program nasional, koordinasi Presiden-Mendagri-Kepala Daerah, dan anggaran negara",
+    "1": "Pelantikan kepala daerah pasca-Pilkada, kasus Pati, putusan MK, dan jadwal pelantikan bupati",
+    "2": "Kebakaran gedung & pemadaman dengan bantuan drone",
+    "3": "Sektor perhotelan & restoran sebagai venue rapat pemerintah",
+    "4": "Reformasi Polri & Komisi Percepatan Reformasi, Jimly Asshiddiqie sebagai aktor sentral",
+    "5": "Pengendalian inflasi: harga beras, pangan, dan koordinasi Bulog di daerah",
+    "6": "Penetapan UMP bulan Desember, topik tidak aktif",
+    "7": "Kasus Mirwan & ormas di Aceh Selatan: sanksi pemberhentian bupati",
+    "8": "Sengketa wilayah pulau antara Aceh dan Sumatera Utara, kasus Pulau Mangkir",
+    "9": "Pertemuan ministerial regional/internasional, artikel berbahasa Inggris",
+    "10": "PKK & Posyandu — pemberdayaan kesejahteraan keluarga, tidak aktif",
+    "11": "Pemulihan pasca-bencana Sumatera: bantuan PRR Aceh, hunian terdampak, dan rehabilitasi"
+  },
+  "youtube": {
+    "0": "Sengketa pulau Aceh-Sumut dengan narasi 'milik rakyat' dan kritik ke Jokowi",
+    "1": "Kritik pejabat & narasi 'ternak Mulyono': framing skeptik atas bantuan pemerintah",
+    "2": "Apresiasi Prabowo sebagai presiden: 'mantap, semoga sehat'",
+    "3": "Tuntutan pemecatan & narasi 'geng Solo bikin gaduh', kritik ke Jokowi",
+    "4": "Persona Rismon Sianipar & kritik institusi Polri/TNI",
+    "5": "Pemerintahan daerah & dinamika partai: kepala daerah, desa, PDIP",
+    "6": "Perbandingan Indonesia-Malaysia & retorika 'merdeka'",
+    "7": "Diskusi uang, jual, isu PKI & polisi, mixed framing kritis",
+    "8": "Komentar personal & framing 'jahat' sebagai dehumanisasi pejabat",
+    "9": "Frame 'omon-omon' & label 'penjahat' sebagai delegitimasi"
+  },
+  "twitter": {
+    "0": "Reaksi umum publik Twitter: bahasa informal, banyak slang, fokus 'rakyat-pejabat'",
+    "1": "Frame 'omon-omon' versi Rismon Sianipar & isu ijazah palsu",
+    "2": "Banjir Sumatera & pemulihan pasca-bencana Aceh",
+    "3": "Buku Merah & isu korupsi: KPK, kabinet, tuntutan tangkap",
+    "4": "Sengketa pulau Aceh-Sumut: hashtag #TitoPemecahBangsa & tuntutan pemecatan",
+    "5": "'Copot biang kerok' & kritik nama-nama pejabat: Mulyono, Maruarar",
+    "6": "Kabinet Prabowo: Bahlil, Budi, Sigit Listyo & isu Papua",
+    "7": "Pemerintahan daerah & anggaran Pemda, governance institutional",
+    "8": "Aceh, Ketua PKK Tri, ormas, dan kementerian",
+    "9": "Retret kepala daerah di Magelang Akmil & konteks Aceh Nanggroe"
+  },
+  "tiktok": {
+    "0": "Mendagri keberatan Polri di bawah Kemendagri & tuntutan pemecatan",
+    "1": "Frame 'jual pulau' & isu Polri/TNI di bawah Kemendagri",
+    "2": "Perbandingan Indonesia-Malaysia, reformasi, dan retorika 'maaf rakyat'",
+    "3": "Aceh, isu PKI Aidit, dan kritik 'anak' pejabat",
+    "4": "Program Makan Bergizi Gratis: beras, nasi, padi",
+    "5": "Kritik perilaku pejabat: 'ngomong tanpa kerja'",
+    "6": "Apresiasi Tito sebagai 'jenderal': salam, sehat, mantap",
+    "7": "Permintaan bantuan & frame 'malu': kasih contoh, tolong rakyat"
+  },
+  "instagram": {
+    "0": "Pemerintahan daerah: Pilkada, pelantikan kepala daerah, harga",
+    "1": "Posting resmi @titokarnavian: aktivitas Kemendagri di daerah Aceh, anggaran, bencana",
+    "2": "Komentar singkat informal: 'keren', 'emang', 'biar'",
+    "3": "Satgas Percepatan PRR: bantuan & pemulihan pasca-bencana Sumatera",
+    "4": "Ucapan selamat & perayaan nasional: Indonesia, jenderal, merah-putih",
+    "5": "Ungkapan 'terima kasih' & apresiasi publik: alhamdulillah, presiden",
+    "6": "Promosi aplikasi Siskamling/RRI ormas di Google Play",
+    "7": "Komentar campur: pajak, listrik mobil, salut"
+  },
+  "facebook": {
+    "0": "Apresiasi Mendagri di Aceh: 'sehat', 'terima kasih', bantuan",
+    "1": "Pendapatan negara & sumber penerimaan: pajak, APBN",
+    "2": "Apresiasi 'bapak/bpk sukses', dukungan personal ke Tito",
+    "3": "Pemulihan masyarakat daerah Aceh-Sumatera: pemerintah & kota terdampak",
+    "4": "Harga, inflasi & transparansi: kabar baik vs kekhawatiran",
+    "5": "Salam ke pejabat: Lampung, oknum, rupiah — campuran"
+  }
+}
