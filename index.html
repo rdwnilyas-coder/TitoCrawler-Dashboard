@@ -1568,21 +1568,21 @@
         </div>
       </div>
 
-      <!-- 8 & 9. Group A vs B + Reporter specialty (news only) -->
-      <div id="topic-news-only" class="grid-2" style="margin-top:14px;display:none">
+      <!-- 8 & 9. Group A vs B (full row) + Reporter specialty (news only, full row) -->
+      <div id="topic-news-only" style="margin-top:14px;display:none">
         <div class="card">
           <h3>⚖️ Group A (mainstream) vs Group B (alternatif) — framing per topic</h3>
           <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
             Share dokumen tiap grup di tiap topic. Bar ke kanan (oranye) = Group B leans, ke kiri (biru) = Group A leans.
           </p>
-          <div class="chart chart-tall" id="chart-topic-groupab"></div>
+          <div class="chart chart-tall" id="chart-topic-groupab" style="height:640px"></div>
         </div>
-        <div class="card">
+        <div class="card" style="margin-top:14px">
           <h3>👤 Reporter specialization (top 15)</h3>
           <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
             Entropy rendah = reporter <em>specialist</em> (fokus 1-2 topik). Tinggi = generalist.
           </p>
-          <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+          <div style="overflow-x:auto">
             <table class="articles" id="topic-reporter-table">
               <thead><tr><th>Reporter</th><th>n</th><th>entropy</th><th>top topic</th><th>share</th></tr></thead>
               <tbody></tbody>
@@ -4750,15 +4750,27 @@
         tooltip: { trigger: 'axis', formatter: ps => {
           const idx = ps[0].dataIndex;
           const r = rows[idx];
-          return `<strong>${r.label_auto}</strong><br/>` +
+          const readable = newsReadable[r.id] || r.label_auto;
+          return `<strong>T${r.id} — ${readable}</strong><br/>` +
+            `<span style="color:#9ca3af">${r.label_auto}</span><br/>` +
             `Group A: ${(r.a_share*100).toFixed(1)}% (${r.a_count} docs)<br/>` +
             `Group B: ${(r.b_share*100).toFixed(1)}% (${r.b_count} docs)<br/>` +
             `Lean: ${r.lean > 0 ? 'B' : 'A'} by ${Math.abs(r.lean*100).toFixed(1)}%`;
         }},
         legend: { data: ['Group A (mainstream)', 'Group B (alternatif)'], top: 0, textStyle: { fontSize: 11 } },
-        grid: { left: 8, right: 24, top: 36, bottom: 30, containLabel: true },
+        // Allocate ample left margin (320px) untuk label readable yang panjang
+        grid: { left: 320, right: 60, top: 40, bottom: 36 },
         xAxis: { type: 'value', name: '% share docs', axisLabel: { fontSize: 10, formatter: v => Math.abs(v) + '%' } },
-        yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10 } },
+        yAxis: {
+          type: 'category', data: labels,
+          axisLabel: {
+            fontSize: 11,
+            width: 310,        // box width yAxis label
+            overflow: 'break', // wrap teks panjang
+            lineHeight: 13,
+            margin: 8,
+          },
+        },
         series: [
           { name: 'Group A (mainstream)', type: 'bar', stack: 'g', data: aShares, itemStyle: { color: '#1f77b4' },
             label: { show: true, position: 'left', fontSize: 10, formatter: p => Math.abs(p.value).toFixed(1) + '%' } },
