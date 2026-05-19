@@ -5808,7 +5808,7 @@
       // Summary card
       html += `<div class="story-summary-card">
         <h2>${escapeHtml(s.title)}</h2>
-        <p class="summary-text">${escapeHtml(s.summary)}</p>
+        <p class="summary-text">${escapeHtmlAllowBold(s.summary)}</p>
         <div class="story-tag-list">${(s.tags||[]).map(t => `<span class="story-tag">#${escapeHtml(t)}</span>`).join('')}</div>
       </div>`;
 
@@ -5830,7 +5830,7 @@
               <div class="heading">${meta.heading}</div>
             </div>
           </div>
-          <div class="story-narasi">${escapeHtml(sec.narasi || '')}</div>
+          <div class="story-narasi">${escapeHtmlAllowBold(sec.narasi || '')}</div>
           ${evCount ? `<div class="story-evidence">${evHtml}</div>` : ''}
         </div>`;
       }
@@ -5850,19 +5850,19 @@
           <div class="story-what-now">
             <div class="story-risk-banner ${riskCls}">
               <div class="risk-label">Risk level: ${escapeHtml(wn.risk_level || 'medium')}</div>
-              <div style="margin-top:4px">${escapeHtml(wn.risk_summary || '')}</div>
+              <div style="margin-top:4px">${escapeHtmlAllowBold(wn.risk_summary || '')}</div>
             </div>
             <div class="story-action-block">
               <h4>🛠️ Mitigasi taktis (1–2 minggu)</h4>
-              <ul>${(wn.mitigasi_taktis || []).map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
+              <ul>${(wn.mitigasi_taktis || []).map(x => `<li>${escapeHtmlAllowBold(x)}</li>`).join('')}</ul>
             </div>
             <div class="story-action-block">
               <h4>🗺️ Roadmap strategis (1–3 bulan)</h4>
-              <ul>${(wn.roadmap_strategis || []).map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
+              <ul>${(wn.roadmap_strategis || []).map(x => `<li>${escapeHtmlAllowBold(x)}</li>`).join('')}</ul>
             </div>
             <div class="story-kpi-block">
               <h4>📊 KPI keberhasilan</h4>
-              <ul>${(wn.kpi || []).map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
+              <ul>${(wn.kpi || []).map(x => `<li>${escapeHtmlAllowBold(x)}</li>`).join('')}</ul>
             </div>
           </div>
         </div>`;
@@ -5885,6 +5885,19 @@
       if (str == null) return '';
       return String(str).replace(/[&<>"']/g, c =>
         ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // Like escapeHtml but allows literal <b>/</b> through.
+    // Use for narasi/summary/risk_summary that come from controlled build script.
+    function escapeHtmlAllowBold(str) {
+      if (str == null) return '';
+      const escaped = String(str).replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      return escaped
+        .replace(/&lt;b&gt;/g, '<b>')
+        .replace(/&lt;\/b&gt;/g, '</b>')
+        .replace(/&lt;i&gt;/g, '<i>')
+        .replace(/&lt;\/i&gt;/g, '</i>');
     }
 
     // Returns HTML string for evidence (chart container placeholder or non-chart inline)
