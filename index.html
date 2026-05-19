@@ -4758,16 +4758,15 @@
             `Lean: ${r.lean > 0 ? 'B' : 'A'} by ${Math.abs(r.lean*100).toFixed(1)}%`;
         }},
         legend: { data: ['Group A (mainstream)', 'Group B (alternatif)'], top: 0, textStyle: { fontSize: 11 } },
-        // Allocate ample left margin (320px) untuk label readable yang panjang
-        grid: { left: 320, right: 60, top: 40, bottom: 36 },
+        // Label ringkas (max 7 kata) → muat 240px. Full label di tooltip.
+        grid: { left: 240, right: 60, top: 40, bottom: 36 },
         xAxis: { type: 'value', name: '% share docs', axisLabel: { fontSize: 10, formatter: v => Math.abs(v) + '%' } },
         yAxis: {
           type: 'category', data: labels,
           axisLabel: {
             fontSize: 11,
-            width: 310,        // box width yAxis label
-            overflow: 'break', // wrap teks panjang
-            lineHeight: 13,
+            width: 230,
+            overflow: 'truncate',
             margin: 8,
           },
         },
