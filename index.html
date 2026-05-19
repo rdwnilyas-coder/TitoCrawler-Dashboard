@@ -362,11 +362,14 @@
     .story-section-header .heading { font-size:18px; font-weight:700; color: var(--text); margin-top:1px; }
     .story-narasi { font-size:14px; line-height:1.65; color: var(--text); margin: 4px 0 14px; }
     .story-evidence { display: grid; gap: 14px; }
-    /* Desktop: 2-column grid agar donut bisa berdampingan kiri-kanan */
+    /* Desktop: 2-column grid agar donut bisa berdampingan kiri-kanan.
+       .story-evidence-donut → 2 donut beruntun auto-pair.
+       .story-evidence-half  → explicit paired card (donut + quote panel, dll). */
     @media (min-width: 1024px) {
       .story-evidence { grid-template-columns: repeat(2, 1fr); }
       .story-evidence > .card { grid-column: span 2; }
-      .story-evidence > .card.story-evidence-donut { grid-column: span 1; }
+      .story-evidence > .card.story-evidence-donut,
+      .story-evidence > .card.story-evidence-half { grid-column: span 1; }
     }
     /* Tabel accent: standout merah untuk highlight critical threat (bot ∩ hate dll) */
     .story-table-accent { border: 2px solid #dc2626; border-radius: 8px; overflow: hidden; }
@@ -6657,8 +6660,9 @@
     function renderEvidence(ev, evId) {
       const title = ev.title ? `<h3>${escapeHtml(ev.title)}</h3>` : '';
       switch (ev.type) {
-        case 'kpi_strip':
-          return `<div class="card" style="padding:14px 16px">${title}
+        case 'kpi_strip': {
+          const pairCls = ev.layout_pair ? ' story-evidence-half' : '';
+          return `<div class="card${pairCls}" style="padding:14px 16px">${title}
             <div class="story-kpi-strip">
               ${(ev.items || []).map(it => `
                 <div class="story-kpi-card">
@@ -6667,9 +6671,11 @@
                 </div>`).join('')}
             </div>
           </div>`;
-        case 'quote_list':
+        }
+        case 'quote_list': {
           if (!ev.items || ev.items.length === 0) return '';
-          return `<div class="card" style="padding:14px 16px">${title}
+          const pairCls = ev.layout_pair ? ' story-evidence-half' : '';
+          return `<div class="card${pairCls}" style="padding:14px 16px">${title}
             <div class="story-quote-list">
               ${ev.items.map(q => `
                 <div class="story-quote">
@@ -6684,6 +6690,7 @@
                 </div>`).join('')}
             </div>
           </div>`;
+        }
         case 'table': {
           const accentCls = ev.accent ? ' story-table-accent' : '';
           const linkCol = (typeof ev.link_col === 'number') ? ev.link_col : -1;
@@ -6712,7 +6719,9 @@
         case 'line': {
           // Chart — needs ECharts init after mount
           // Donut diberi class extra agar 2 donut beruntun render side-by-side (CSS desktop)
-          const cardCls = (ev.type === 'donut') ? ' story-evidence-donut' : '';
+          let cardCls = (ev.type === 'donut') ? ' story-evidence-donut' : '';
+          // Explicit pair flag — paksa 50% width di desktop (untuk pasangan donut + quote panel dll)
+          if (ev.layout_pair) cardCls += ' story-evidence-half';
           const chartCls = (ev.type === 'line' || ev.type === 'stacked_bar') ? '-tall' : '';
           return `<div class="card${cardCls}" style="padding:14px 16px">${title}
             <div id="${evId}" class="story-chart${chartCls}"></div>
