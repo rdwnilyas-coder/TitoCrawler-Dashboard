@@ -6717,13 +6717,14 @@
         case 'donut':
         case 'bar_h':
         case 'stacked_bar':
-        case 'line': {
+        case 'line':
+        case 'network': {
           // Chart — needs ECharts init after mount
           // Donut diberi class extra agar 2 donut beruntun render side-by-side (CSS desktop)
           let cardCls = (ev.type === 'donut') ? ' story-evidence-donut' : '';
           // Explicit pair flag — paksa 50% width di desktop (untuk pasangan donut + quote panel dll)
           if (ev.layout_pair) cardCls += ' story-evidence-half';
-          const chartCls = (ev.type === 'line' || ev.type === 'stacked_bar') ? '-tall' : '';
+          const chartCls = (ev.type === 'line' || ev.type === 'stacked_bar' || ev.type === 'network') ? '-tall' : '';
           return `<div class="card${cardCls}" style="padding:14px 16px">${title}
             <div id="${evId}" class="story-chart${chartCls}"></div>
           </div>`;
@@ -6821,6 +6822,49 @@
             lineStyle: { color: s.color, width: 2 },
             data: s.data,
           })),
+        };
+      } else if (ev.type === 'network') {
+        // Ego network: focus node + direct neighbors. Force-directed layout.
+        const focus = ev.focus;
+        const nodes = (ev.nodes || []).map(n => {
+          const isFocus = n.is_focus || n.id === focus;
+          const sz = isFocus ? 50 : Math.min(36, 14 + Math.log10((n.value || 1) + 1) * 5);
+          return {
+            id: n.id, name: n.label || n.id,
+            symbolSize: sz,
+            itemStyle: { color: isFocus ? '#dc2626' : '#1f77b4',
+                         borderWidth: isFocus ? 3 : 1, borderColor: '#fff' },
+            label: { show: true, fontSize: isFocus ? 13 : 11,
+                     fontWeight: isFocus ? 700 : 500, color: '#1a1a1a' },
+            value: n.value || 0,
+          };
+        });
+        const edges = (ev.edges || []).map(e => ({
+          source: e.source, target: e.target,
+          value: e.weight || 0,
+          lineStyle: { width: Math.max(1.5, Math.min(8, Math.log10((e.weight || 1) + 1) * 2.5)),
+                       color: '#cbd5e1', opacity: 0.8, curveness: 0.1 },
+        }));
+        opt = {
+          ...baseOpt,
+          tooltip: {
+            trigger: 'item',
+            formatter: (p) => {
+              if (p.dataType === 'node') return `<b>${p.name}</b>${p.data.value ? `<br/>mentions: ${p.data.value.toLocaleString('id-ID')}` : ''}`;
+              if (p.dataType === 'edge') return `${p.data.source} ↔ ${p.data.target}<br/>weight: ${p.data.value.toLocaleString('id-ID')}`;
+              return '';
+            },
+          },
+          series: [{
+            type: 'graph',
+            layout: 'force',
+            roam: true,
+            draggable: true,
+            data: nodes,
+            edges,
+            force: { repulsion: 280, edgeLength: [60, 160], gravity: 0.15 },
+            emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
+          }],
         };
       }
       if (opt) chart.setOption(opt, true);
