@@ -1777,8 +1777,8 @@
         <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
           <strong>Focus</strong> tinggi + <strong>Insular</strong> tinggi = echo chamber kuat (akun fokus pada topik
           spesifik + jarang interaksi keluar). <strong>EC composite</strong> = bobot 50/50 dari kedua skor, dikalikan
-          factor ukuran komunitas (komunitas terlalu kecil di-suppress).
-          Klik baris untuk highlight di graph.
+          factor ukuran komunitas. <strong>Tampil: Top 15 komunitas terbesar dengan size ≥10 akun</strong>
+          (long-tail komunitas mini di-suppress untuk visual lebih padat).
         </p>
         <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
           <table class="articles" id="snasm-comm-table">
@@ -2019,6 +2019,18 @@
         </p>
         <div id="botc-swarms"></div>
       </div>
+
+      <!-- Sample kalimat per akun bot -->
+      <div class="card" style="margin-top:14px">
+        <h3>💬 Contoh kalimat-kalimat terdeteksi bot (platform aktif)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
+          2 sample post per akun untuk Top 10 akun dengan <code>bot_score</code> tertinggi.
+          Sumber: konten asli akun yang terdeteksi. <em>Catatan</em>: tinggi bot_score ≠
+          pasti otomatis — sample bantu verifikasi manual (cek apakah konten beneran
+          repetitive, mention-spam, atau aslinya legit user yang kebetulan posting padat).
+        </p>
+        <div id="botc-samples"></div>
+      </div>
     </section>
 
     <!-- Tab: Hate Speech -->
@@ -2137,19 +2149,6 @@
       <div class="card" style="margin-top:14px">
         <h3>📈 Monthly trend (kebijakan aktif)</h3>
         <div id="chart-stance-monthly" style="height:340px"></div>
-      </div>
-
-      <!-- CROSS-ANALYSIS: Stance × Sentiment co-validation -->
-      <div class="card" style="margin-top:14px">
-        <h3>🔀 Cross: Stance × BERT Sentiment (kebijakan aktif)</h3>
-        <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
-          2D matrix stance NLI × sentiment BERT. <strong>Pro+Neg</strong> =
-          positive stance dengan negative tone (mis. "akhirnya pemerintah ngakui gagal").
-          <strong>Kontra+Pos</strong> = negative stance dengan positive language
-          (signal sarkasme). <em>Note</em>: matrix dari sample subset (3 per stance);
-          untuk full doc-level cross perlu re-aggregate raw.
-        </p>
-        <div id="cross-stance-sentiment-matrix"></div>
       </div>
 
       <div class="card" style="margin-top:14px">
@@ -5042,6 +5041,19 @@
       // Also eager-load topic_resume so the topic legend works even if the user
       // hasn't opened the Topic Modelling tab yet.
       if (!TOPIC) TOPIC = await loadData('topic_resume');
+      // Eager-load topic_labels.json + inject label_readable so legend pakai
+      // kalimat readable bukan "term1 / term2 / term3" raw
+      try {
+        const tl = await fetch('data/topic_labels.json').then(r => r.json());
+        if (TOPIC && TOPIC.sources && tl) {
+          for (const _src in TOPIC.sources) {
+            const _map = tl[_src] || {};
+            (TOPIC.sources[_src].topics || []).forEach(t => {
+              if (!t.label_readable) t.label_readable = _map[String(t.id)] || t.label_auto;
+            });
+          }
+        }
+      } catch (e) { /* fallback to label_auto */ }
       if (!SNA_SOCMED || !SNA_SOCMED.platforms) {
         document.getElementById('tab-sna-socmed').innerHTML =
           '<div class="card"><h3>SNA data belum di-generate</h3>' +
@@ -5159,7 +5171,12 @@
 
     function renderSNASMCommTable() {
       const src = SNASM_STATE.source;
-      const comms = (SNA_SOCMED.platforms[src].communities || []).slice(0, 30);
+      // Konsolidasi: filter komunitas terlalu kecil (≥10 akun) supaya tabel tidak
+      // dipenuhi long-tail komunitas mini, lalu ambil top 15 by size. Visual lebih padat.
+      const MIN_COMM_SIZE = 10;
+      const allComms = SNA_SOCMED.platforms[src].communities || [];
+      const filtered = allComms.filter(c => (c.size || 0) >= MIN_COMM_SIZE);
+      const comms = filtered.slice(0, 15);
       const tbody = document.querySelector('#snasm-comm-table tbody');
       if (!comms.length) {
         tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#9ca3af">No communities</td></tr>';
@@ -5189,7 +5206,9 @@
 
     function renderSNASMTopicDist() {
       const src = SNASM_STATE.source;
-      const comms = (SNA_SOCMED.platforms[src].communities || []).slice(0, 6);
+      // Pakai filter sama dengan tabel: hanya komunitas dengan size >= 10
+      const allComms = SNA_SOCMED.platforms[src].communities || [];
+      const comms = allComms.filter(c => (c.size || 0) >= 10).slice(0, 6);
       const el = document.getElementById('chart-snasm-topic-dist');
       const legendEl = document.getElementById('snasm-topic-legend');
       if (!comms.length) { el.innerHTML = ''; if (legendEl) legendEl.innerHTML = ''; return; }
@@ -5581,7 +5600,34 @@
       document.getElementById('botc-kpi-row').innerHTML = kpi;
       renderBotCoordTable();
       renderBotCoordSwarms();
+      renderBotCoordSamples();
       renderCrossBotHate();
+    }
+
+    function renderBotCoordSamples() {
+      const p = BOT_DATA.platforms[BOTC_STATE.source];
+      const top10 = (p.accounts || []).slice(0, 10);
+      const el = document.getElementById('botc-samples');
+      if (!top10.length) { el.innerHTML = '<div style="color:#9ca3af;padding:12px">Tidak ada data sample</div>'; return; }
+      el.innerHTML = top10.map((a, i) => {
+        const samples = a.samples || [];
+        if (!samples.length) {
+          return `<div style="border-left:3px solid #d4d4d8;padding:8px 12px;margin-bottom:8px;background:#fafafa;border-radius:0 6px 6px 0">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+              <span style="font-family:monospace"><strong>#${i+1} ${escapeHtml(a.author)}</strong> · bot_score <span style="color:#dc2626">${a.bot_score.toFixed(2)}</span> · ${a.activity} posts</span>
+            </div>
+            <div style="font-size:11px;color:#9ca3af;font-style:italic;margin-top:4px">(sample post tidak tersedia — konten terlalu pendek atau hanya URL)</div>
+          </div>`;
+        }
+        const sevColor = a.bot_score >= 0.7 ? '#dc2626' : (a.bot_score >= 0.55 ? '#ea580c' : '#facc15');
+        return `<div style="border-left:3px solid ${sevColor};padding:10px 14px;margin-bottom:10px;background:#fff;border-radius:0 6px 6px 0;border:1px solid #e5e7eb">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-family:monospace;font-size:12px"><strong>#${i+1} ${escapeHtml(a.author)}</strong></span>
+            <span style="font-size:11px;color:#6b7280">bot_score <strong style="color:${sevColor}">${a.bot_score.toFixed(2)}</strong> · template ${a.template_score.toFixed(2)} · ${a.activity} posts</span>
+          </div>
+          ${samples.map(s => `<div style="font-size:13px;line-height:1.5;color:#374151;background:#f9fafb;padding:6px 10px;border-radius:4px;margin-top:4px">"${escapeHtml(s)}"</div>`).join('')}
+        </div>`;
+      }).join('');
     }
 
     async function renderCrossBotHate() {
@@ -5935,10 +5981,10 @@
       renderStanceDonut();
       renderStanceMonthly();
       renderStanceSamples();
-      renderCrossStanceSentiment();
     }
 
-    async function renderCrossStanceSentiment() {
+    async function _UNUSED_renderCrossStanceSentiment() {
+      // Block ini ditinggalkan tapi tidak dipanggil — user minta hapus (isi tidak bernilai)
       await ensureCross();
       if (!CROSS) return;
       const data = (CROSS.stance_x_sentiment || {})[STANCE_STATE.source] || {};
