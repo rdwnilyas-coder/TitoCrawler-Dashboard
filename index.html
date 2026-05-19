@@ -2046,10 +2046,9 @@
           adalah snapshot data tanpa filter — angka final hasil analisis. <em>Audience: candid
           self-awareness mode, tidak di-filter PR.</em>
         </p>
-        <div class="filters" style="margin-top:10px;grid-template-columns:auto 1fr auto">
+        <div class="filters" style="margin-top:10px;grid-template-columns:auto 1fr">
           <label style="font-size:12px;color:var(--text-muted)"><strong>Pilih cerita:</strong></label>
           <select id="story-picker"></select>
-          <div id="story-tone-badge" style="font-size:12px;font-weight:600;padding:6px 12px;border-radius:6px"></div>
         </div>
       </div>
 
@@ -5791,23 +5790,6 @@
       // Dispose previous chart instances
       STORY_CHART_INSTANCES.forEach(c => { try { c.dispose(); } catch(e) {} });
       STORY_CHART_INSTANCES = [];
-
-      // Tone badge
-      const badge = document.getElementById('story-tone-badge');
-      const toneCls = {
-        positive: 'story-tone-positive',
-        mixed: 'story-tone-mixed',
-        challenging: 'story-tone-challenging',
-        crisis: 'story-tone-crisis',
-      }[s.tone] || 'story-tone-mixed';
-      const toneLabel = {
-        positive: '🟢 Positive',
-        mixed: '🟡 Mixed',
-        challenging: '🟠 Challenging',
-        crisis: '🔴 Crisis',
-      }[s.tone] || s.tone;
-      badge.className = toneCls;
-      badge.textContent = toneLabel;
 
       // Build HTML
       const sectionsOrder = ['what', 'who', 'when', 'where', 'why', 'how'];
