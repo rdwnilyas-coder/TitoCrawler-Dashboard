@@ -6112,7 +6112,16 @@
                      `<span style="color:#71717a">${p.data.label_type}</span><br/>` +
                      `Mention: ${(p.data.mentionsInRange||0).toLocaleString('id-ID')} · Degree: ${p.data.degree}`;
             } else if (p.dataType === 'edge') {
-              return `${p.data.source} ↔ ${p.data.target}<br/>weight: ${p.data.value || p.data.weight}`;
+              // Cari edge object asli untuk tahu type
+              const e = data.edges.find(x =>
+                (x.source === p.data.source && x.target === p.data.target) ||
+                (x.source === p.data.target && x.target === p.data.source));
+              const typeLabel = e?.type === 'topic_sim'
+                ? '<b>Cross-platform topic bridge</b> (Jaccard similarity)'
+                : (e?.type || 'connection');
+              return `${p.data.source} ↔ ${p.data.target}<br/>` +
+                     `<span style="color:#71717a">${typeLabel}</span><br/>` +
+                     `weight: ${p.data.value || p.data.weight}`;
             }
             return '';
           }
@@ -6135,10 +6144,16 @@
               return lbl.length > 18 ? lbl.slice(0, 18) + '…' : lbl;
             }}
           })),
-          edges: data.edges.map(e => ({
-            source: e.source, target: e.target, value: e.weight,
-            lineStyle: { width: Math.max(0.5, Math.min(4, Math.sqrt(e.weight)/4)), opacity: 0.4, color: '#9ca3af' }
-          })),
+          edges: data.edges.map(e => {
+            // Edge topic_sim (cross-platform thematic bridge) → dashed teal
+            const isTopicBridge = e.type === 'topic_sim';
+            return {
+              source: e.source, target: e.target, value: e.weight,
+              lineStyle: isTopicBridge
+                ? { width: 1.5, opacity: 0.65, color: '#0d9488', type: 'dashed' }
+                : { width: Math.max(0.5, Math.min(4, Math.sqrt(e.weight)/4)), opacity: 0.4, color: '#9ca3af' }
+            };
+          }),
           roam: true, draggable: true,
           force: { repulsion: 220, edgeLength: [40, 120], gravity: 0.08, friction: 0.6 },
           emphasis: { focus: 'adjacency', label: { show: true, fontSize: 11 }, lineStyle: { width: 2, opacity: 0.9 } },
