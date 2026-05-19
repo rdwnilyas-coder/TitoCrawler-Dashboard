@@ -362,6 +362,19 @@
     .story-section-header .heading { font-size:18px; font-weight:700; color: var(--text); margin-top:1px; }
     .story-narasi { font-size:14px; line-height:1.65; color: var(--text); margin: 4px 0 14px; }
     .story-evidence { display: grid; gap: 14px; }
+    /* Desktop: 2-column grid agar donut bisa berdampingan kiri-kanan */
+    @media (min-width: 1024px) {
+      .story-evidence { grid-template-columns: repeat(2, 1fr); }
+      .story-evidence > .card { grid-column: span 2; }
+      .story-evidence > .card.story-evidence-donut { grid-column: span 1; }
+    }
+    /* Tabel accent: standout merah untuk highlight critical threat (bot ∩ hate dll) */
+    .story-table-accent { border: 2px solid #dc2626; border-radius: 8px; overflow: hidden; }
+    .story-table-accent thead th { background:#fef2f2; color:#991b1b; }
+    .story-table-accent tbody tr:nth-child(odd) td { background:#fff7f7; }
+    .story-table-accent tbody tr:hover td { background:#fee2e2; }
+    .story-table a.story-row-link { color:#dc2626; font-weight:700; text-decoration:none; border-bottom:1px dashed #dc2626; }
+    .story-table a.story-row-link:hover { background:#fee2e2; }
     .story-tone-positive   { background: rgba(22,163,74,0.12);  color:#15803d; border:1px solid rgba(22,163,74,0.35); }
     .story-tone-mixed      { background: rgba(217,147,96,0.18); color:#9a3412; border:1px solid rgba(217,147,96,0.45); }
     .story-tone-challenging{ background: rgba(245,158,11,0.16); color:#92400e; border:1px solid rgba(245,158,11,0.45); }
@@ -484,7 +497,6 @@
 
   <nav class="tabs" id="tabs-desktop">
     <button class="active" data-tab="overview">📰 Portal</button>
-    <button data-tab="reporters">👥 Reporters &amp; Tags</button>
     <button data-tab="articles">📄 Articles</button>
     <button data-tab="youtube">🎥 YouTube</button>
     <button data-tab="yt-comments">💬 YT Comments</button>
@@ -569,12 +581,9 @@
           <div class="chart chart-tall" id="chart-calendar"></div>
         </div>
       </div>
-    </section>
 
-    <!-- Tab 2: Reporters & Tags -->
-    <section class="tab-content" id="tab-reporters">
-      <!-- Popular tag wordcloud (static, generated from article titles) -->
-      <div class="card" style="margin-bottom:16px">
+      <!-- Reporters & Tags (di-pindah dari tab Reporters lama, sekarang section paling bawah Portal) -->
+      <div class="card" style="margin-top:16px">
         <h3>☁️ Popular tag — wordcloud dari semua judul artikel</h3>
         <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px">
           Static wordcloud dari 3,744 judul artikel. Token besar = sering muncul.
@@ -586,19 +595,13 @@
         </div>
       </div>
 
-      <div class="grid-2">
+      <div class="grid-2" style="margin-top:16px">
         <div class="card">
           <h3>Top 20 reporters</h3>
-          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
-            Wartawan paling sering nulis Tito (display only).
-          </p>
           <div class="chart chart-tall" id="chart-reporters"></div>
         </div>
         <div class="card">
           <h3>🏷️ Popular tag (top 20)</h3>
-          <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 8px">
-            Tag yang paling sering muncul (display only).
-          </p>
           <div class="chart chart-tall" id="chart-tags"></div>
         </div>
       </div>
@@ -849,7 +852,7 @@
       <div class="card" style="margin-top:16px">
         <h3>Top 20 commenter</h3>
         <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px">
-          Akun paling aktif. Isi komentar tidak dianalisis (NLP nanti).
+          Akun paling aktif komentar di postingan Tito Karnavian.
         </p>
         <div class="chart chart-tall" id="igc-chart-top-commenters"></div>
       </div>
@@ -2350,7 +2353,7 @@
     }
 
     // ====== Tab navigation ======
-    const tabsRendered = { overview: false, reporters: false, articles: false,
+    const tabsRendered = { overview: false, articles: false,
                            ner: false, topic: false, 'sna-socmed': false, sentiment: false, 'bot-coord': false, hate: false, stance: false,
                            kg: false, stories: false,
                            youtube: false, 'yt-comments': false,
@@ -2365,7 +2368,6 @@
       if (sel && sel.value !== name) sel.value = name;
       if (!tabsRendered[name]) {
         if (name === 'overview') await renderOverview();
-        if (name === 'reporters') await renderReporters();
         if (name === 'articles') await renderArticles();
         if (name === 'youtube') await renderYoutube();
         if (name === 'yt-comments') await renderYoutubeComments();
@@ -2404,6 +2406,8 @@
       renderTopPortals();
       renderMonthly();
       renderCalendar();
+      // Reporters & tag chart sekarang di-render bersama Portal tab (sebelumnya tab terpisah)
+      renderReporters();
     }
 
     function renderPortalLists() {
@@ -2449,12 +2453,14 @@
       renderList('portal-list-b', portalsB, 'B', totalB);
     }
 
+    // Warna konsisten untuk Group A vs Group B (dipakai di donut + bar + chart lain)
+    const GROUP_A_COLOR = '#1f77b4';  // biru
+    const GROUP_B_COLOR = '#ff7f0e';  // orange
+
     function renderDonut() {
       const el = $('#chart-donut');
       const chart = echarts.init(el);
       const ga = OVERVIEW.groups.A, gb = OVERVIEW.groups.B;
-      // Focal: larger of the two segments in crimson (matching sosmed donut style)
-      const aFocal = ga.articles >= gb.articles;
       chart.setOption({
         tooltip: { trigger: 'item', formatter: '{b}: {c} artikel ({d}%)' },
         series: [{
@@ -2464,9 +2470,9 @@
           label: { show: true, formatter: '{b}\n{d}%', fontSize: 12 },
           data: [
             { value: ga.articles, name: 'Group A (mainstream)',
-              itemStyle: { color: aFocal ? '#e11d48' : '#6b9ccf' } },
+              itemStyle: { color: GROUP_A_COLOR } },
             { value: gb.articles, name: 'Group B (alternatif)',
-              itemStyle: { color: aFocal ? '#d99360' : '#e11d48' } }
+              itemStyle: { color: GROUP_B_COLOR } }
           ]
         }]
       });
@@ -2474,13 +2480,15 @@
     }
 
     function renderTopPortals() {
-      // Use shared _horizontalBar helper for 60-30-10 consistency (top-3 amber)
+      // Warna per bar = warna group (A biru, B orange) — bukan top-N highlight
       const top10 = OVERVIEW.byPortal.slice(0, 10).map(p => ({...p, label: p.name}));
       _horizontalBar('#chart-top-portals', top10, 'count', 'label', '#a1a1aa',
         (p, src) => {
           const r = src[src.length - 1 - p.dataIndex];
           return `<strong>${r.name}</strong><br/>${fmt(r.count)} artikel (Group ${r.group})`;
-        });
+        },
+        { limit: 10, topN: 0,
+          colorByItem: r => r.group === 'A' ? GROUP_A_COLOR : GROUP_B_COLOR });
     }
 
     function renderMonthly() {
@@ -2748,16 +2756,42 @@
       const chart = echarts.init(el);
       const months = Object.keys(YT.monthly).sort();
       const data = months.map(m => YT.monthly[m] || 0);
+      // 5 bar tertinggi → merah, sisanya abu-abu
+      const top5Indices = data.map((v, i) => ({ v, i }))
+                              .sort((a, b) => b.v - a.v)
+                              .slice(0, 5)
+                              .map(x => x.i);
+      const top5Set = new Set(top5Indices);
+      const styled = data.map((v, i) => ({
+        value: v,
+        itemStyle: { color: top5Set.has(i) ? '#dc2626' : '#d4d4d8' }
+      }));
+      // Garis fluktuasi: moving average 3-bulan
+      const ma3 = data.map((_, i) => {
+        const window = data.slice(Math.max(0, i - 1), i + 2);
+        return Math.round(window.reduce((a, b) => a + b, 0) / window.length);
+      });
       chart.setOption({
-        tooltip: { trigger: 'axis', formatter: p => `<strong>${p[0].axisValue}</strong><br/>${p[0].value} video` },
-        grid: { left: 45, right: 25, top: 20, bottom: 60 },
+        tooltip: {
+          trigger: 'axis',
+          formatter: p => {
+            const bar = p.find(x => x.seriesType === 'bar');
+            const line = p.find(x => x.seriesType === 'line');
+            return `<strong>${p[0].axisValue}</strong><br/>` +
+                   `Videos: ${bar ? bar.value : 0}<br/>` +
+                   `<span style="color:#7c3aed">Rolling avg 3 bln: ${line ? line.value : '-'}</span>`;
+          }
+        },
+        legend: { data: ['Videos', 'Rolling avg 3 bulan'], top: 0, textStyle: { fontSize: 11 } },
+        grid: { left: 45, right: 25, top: 35, bottom: 60 },
         xAxis: { type: 'category', data: months, axisLabel: { rotate: 45, fontSize: 11 } },
         yAxis: { type: 'value' },
-        series: [{
-          name: 'Videos', type: 'bar', data,
-          itemStyle: { color: '#e62b1e' },
-          label: { show: false }
-        }]
+        series: [
+          { name: 'Videos', type: 'bar', data: styled, label: { show: false } },
+          { name: 'Rolling avg 3 bulan', type: 'line', smooth: true, data: ma3,
+            itemStyle: { color: '#7c3aed' }, lineStyle: { color: '#7c3aed', width: 2.5 },
+            symbol: 'circle', symbolSize: 6 }
+        ]
       });
       window.addEventListener('resize', () => chart.resize());
     }
@@ -2784,10 +2818,21 @@
       window.addEventListener('resize', () => chart.resize());
     }
 
-    function _renderHBar(elId, items, valueKey, labelKey, color, fmtTip) {
+    function _renderHBar(elId, items, valueKey, labelKey, color, fmtTip, opts) {
       const el = $(elId);
       const chart = echarts.init(el);
-      const sorted = [...items].sort((a, b) => (b[valueKey] || 0) - (a[valueKey] || 0)).slice(0, 15).reverse();
+      opts = opts || {};
+      const limit = opts.limit || 15;
+      const topN = opts.topN || 0;  // 0 = warna seragam
+      const hiColor = opts.hiColor || color || '#f59e0b';
+      const baseColor = opts.baseColor || '#d4d4d8';
+      const sorted = [...items].sort((a, b) => (b[valueKey] || 0) - (a[valueKey] || 0)).slice(0, limit).reverse();
+      const styled = topN > 0
+        ? sorted.map((s, i) => ({
+            value: s[valueKey] || 0,
+            itemStyle: { color: i >= sorted.length - topN ? hiColor : baseColor }
+          }))
+        : sorted.map(s => s[valueKey] || 0);
       chart.setOption({
         grid: { left: 160, right: 60, top: 10, bottom: 30 },
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
@@ -2796,8 +2841,8 @@
         yAxis: { type: 'category', data: sorted.map(s => s[labelKey]), axisLabel: { fontSize: 11, width: 145, overflow: 'truncate' } },
         series: [{
           type: 'bar',
-          data: sorted.map(s => s[valueKey] || 0),
-          itemStyle: { color },
+          data: styled,
+          itemStyle: topN > 0 ? undefined : { color },
           label: { show: true, position: 'right', fontSize: 11,
                    formatter: v => fmt(v.value) }
         }]
@@ -2806,35 +2851,39 @@
     }
 
     function renderYTTopChannels() {
-      _renderHBar('#yt-chart-top-channels', YT.topChannels, 'videos', 'channel', '#e62b1e',
+      _renderHBar('#yt-chart-top-channels', YT.topChannels, 'videos', 'channel', '#dc2626',
         (p, src) => {
           const row = src[src.length - 1 - p.dataIndex];
           return `<strong>${row.channel}</strong><br/>` +
                  `Videos: ${fmt(row.videos)}<br/>` +
                  `Total views: ${fmt(row.totalViews)}<br/>` +
                  `Subscribers: ${fmt(row.subscribers)}`;
-        });
+        },
+        { topN: 5, hiColor: '#dc2626', baseColor: '#d4d4d8' });
     }
 
     function renderYTTopChannelsByViews() {
-      _renderHBar('#yt-chart-top-channels-views', YT.topChannelsByViews, 'totalViews', 'channel', '#0366d6',
+      _renderHBar('#yt-chart-top-channels-views', YT.topChannelsByViews, 'totalViews', 'channel', '#1f77b4',
         (p, src) => {
           const row = src[src.length - 1 - p.dataIndex];
           return `<strong>${row.channel}</strong><br/>` +
                  `Total views: ${fmt(row.totalViews)}<br/>` +
                  `Videos: ${fmt(row.videos)}<br/>` +
                  `Subscribers: ${fmt(row.subscribers)}`;
-        });
+        },
+        { topN: 5, hiColor: '#1f77b4', baseColor: '#d4d4d8' });
     }
 
     function renderYTCategory() {
-      _renderHBar('#yt-chart-category', YT.categoryDist, 'count', 'category', '#feca57',
-        (p, src) => `${p.name}: ${fmt(p.value)} video`);
+      _renderHBar('#yt-chart-category', YT.categoryDist, 'count', 'category', '#f59e0b',
+        (p, src) => `${p.name}: ${fmt(p.value)} video`,
+        { topN: 2, hiColor: '#f59e0b', baseColor: '#d4d4d8' });
     }
 
     function renderYTTags() {
-      _renderHBar('#yt-chart-tags', YT.topTags.slice(0, 20), 'count', 'tag', '#5f27cd',
-        (p, src) => `#${p.name}: ${fmt(p.value)} kali`);
+      _renderHBar('#yt-chart-tags', YT.topTags.slice(0, 20), 'count', 'tag', '#7c3aed',
+        (p, src) => `#${p.name}: ${fmt(p.value)} kali`,
+        { limit: 20, topN: 5, hiColor: '#7c3aed', baseColor: '#d4d4d8' });
     }
 
     function _fmtDur(sec) {
@@ -2928,15 +2977,21 @@
       const chart = echarts.init(el);
       const months = Object.keys(YTC.monthly).sort();
       const data = months.map(m => YTC.monthly[m] || 0);
+      // 3 bar tertinggi → merah, sisanya abu-abu
+      const top3Set = new Set(data.map((v, i) => ({ v, i }))
+                                  .sort((a, b) => b.v - a.v)
+                                  .slice(0, 3)
+                                  .map(x => x.i));
+      const styled = data.map((v, i) => ({
+        value: v,
+        itemStyle: { color: top3Set.has(i) ? '#dc2626' : '#d4d4d8' }
+      }));
       chart.setOption({
         tooltip: { trigger: 'axis', formatter: p => `<strong>${p[0].axisValue}</strong><br/>${fmt(p[0].value)} komentar` },
         grid: { left: 60, right: 25, top: 20, bottom: 60 },
         xAxis: { type: 'category', data: months, axisLabel: { rotate: 45, fontSize: 11 } },
         yAxis: { type: 'value', axisLabel: { formatter: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v } },
-        series: [{
-          name: 'Comments', type: 'bar', data,
-          itemStyle: { color: '#e62b1e' }
-        }]
+        series: [{ name: 'Comments', type: 'bar', data: styled }]
       });
       window.addEventListener('resize', () => chart.resize());
     }
@@ -2966,19 +3021,19 @@
       const el = $('#ytc-chart-likes');
       const chart = echarts.init(el);
       const items = YTC.likesDist.filter(d => d.count > 0);
-      const labels = items.map(d => d.bucket);
+      // Donut palette (YT-themed: ungu→merah, 5 langkah)
+      const palette = ['#7c3aed', '#a855f7', '#dc2626', '#f59e0b', '#d4d4d8'];
       chart.setOption({
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
-                   formatter: p => `${p[0].name}: <strong>${fmt(p[0].value)}</strong> komentar` },
-        grid: { left: 60, right: 60, top: 20, bottom: 60 },
-        xAxis: { type: 'category', data: labels, axisLabel: { rotate: 25, fontSize: 11 } },
-        yAxis: { type: 'value', axisLabel: { formatter: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v } },
+        tooltip: { trigger: 'item', formatter: '{b}: {c} komentar ({d}%)' },
+        legend: { orient: 'vertical', left: 'left', top: 'middle', textStyle: { fontSize: 11 } },
         series: [{
-          type: 'bar',
-          data: items.map(d => d.count),
-          itemStyle: { color: '#5f27cd' },
-          label: { show: true, position: 'top', fontSize: 11,
-                   formatter: v => fmt(v.value) }
+          type: 'pie', radius: ['45%', '70%'], center: ['65%', '50%'],
+          avoidLabelOverlap: false,
+          label: { show: true, formatter: '{d}%', fontSize: 11 },
+          data: items.map((d, i) => ({
+            value: d.count, name: d.bucket,
+            itemStyle: { color: palette[i % palette.length] }
+          }))
         }]
       });
       window.addEventListener('resize', () => chart.resize());
@@ -3008,14 +3063,16 @@
     }
 
     function renderYTCTopChannels() {
-      _renderHBar('#ytc-chart-top-channels', YTC.topChannelsByComments, 'comments', 'channel', '#feca57',
-        (p, src) => `<strong>${p.name}</strong><br/>${fmt(p.value)} komentar`);
+      _renderHBar('#ytc-chart-top-channels', YTC.topChannelsByComments, 'comments', 'channel', '#f59e0b',
+        (p, src) => `<strong>${p.name}</strong><br/>${fmt(p.value)} komentar`,
+        { topN: 5, hiColor: '#f59e0b', baseColor: '#d4d4d8' });
     }
 
     function renderYTCTopCommenters() {
       const top = YTC.topCommenters.slice(0, 20);
-      _renderHBar('#ytc-chart-top-commenters', top, 'comments', 'author', '#48dbfb',
-        (p, src) => `<strong>${p.name}</strong><br/>${fmt(p.value)} komentar`);
+      _renderHBar('#ytc-chart-top-commenters', top, 'comments', 'author', '#7dd3fc',
+        (p, src) => `<strong>${p.name}</strong><br/>${fmt(p.value)} komentar`,
+        { limit: 20, topN: 5, hiColor: '#7dd3fc', baseColor: '#d4d4d8' });
     }
 
     function renderYTCTopVideos() {
@@ -3072,16 +3129,27 @@
       window.addEventListener('resize', () => chart.resize());
     }
 
-    function _horizontalBar(elId, items, valueKey, labelKey, color, fmtTip) {
+    function _horizontalBar(elId, items, valueKey, labelKey, color, fmtTip, opts) {
       const el = document.querySelector(elId);
       if (!el) return;
       const chart = echarts.init(el);
-      const sorted = [...items].sort((a, b) => (b[valueKey] || 0) - (a[valueKey] || 0)).slice(0, 15).reverse();
-      // Top-3 in the sorted-reversed array = last 3 (highest values)
+      opts = opts || {};
+      const limit = opts.limit || 20;
+      const topN = (opts.topN !== undefined) ? opts.topN : 3;
+      const hiColor = opts.hiColor || '#f59e0b';
+      const baseColor = opts.baseColor || color || '#a1a1aa';
+      const colorByItem = typeof opts.colorByItem === 'function' ? opts.colorByItem : null;
+      const sorted = [...items].sort((a, b) => (b[valueKey] || 0) - (a[valueKey] || 0)).slice(0, limit).reverse();
+      // Top-N di array sorted-reversed = N item terakhir (nilai tertinggi)
       const styled = sorted.map((s, i) => {
-        const isTop = i >= sorted.length - 3;
+        // Custom per-item color (e.g. by group) menang
+        if (colorByItem) {
+          return { value: s[valueKey] || 0,
+                   itemStyle: { color: colorByItem(s) } };
+        }
+        const isTop = topN > 0 && i >= sorted.length - topN;
         return { value: s[valueKey] || 0,
-                 itemStyle: { color: isTop ? '#f59e0b' : (color || '#a1a1aa') } };
+                 itemStyle: { color: isTop ? hiColor : baseColor } };
       });
       chart.setOption({
         grid: { left: 160, right: 70, top: 10, bottom: 30 },
@@ -3293,7 +3361,9 @@
       _timelineBar('#igc-chart-monthly', months, months.map(k => IGC.monthly[k]), 'Comments');
       _donut('#igc-chart-length', IGC.lengthDist.filter(d => d.count > 0),
              'count', 'bucket', TT_DONUT);
-      _horizontalBar('#igc-chart-likes', IGC.likesDist.filter(d => d.count > 0), 'count', 'bucket', '#a1a1aa');
+      // Distribusi like per komentar → donut (per request)
+      _donut('#igc-chart-likes', IGC.likesDist.filter(d => d.count > 0),
+             'count', 'bucket', TT_DONUT);
       _horizontalBar('#igc-chart-top-posts-bar',
         IGC.topPostsByComments.slice(0, 15).map(v => ({...v, label: v.title || v.post_id})),
         'fetched_comments', 'label', '#a1a1aa',
@@ -6614,28 +6684,40 @@
                 </div>`).join('')}
             </div>
           </div>`;
-        case 'table':
+        case 'table': {
+          const accentCls = ev.accent ? ' story-table-accent' : '';
+          const linkCol = (typeof ev.link_col === 'number') ? ev.link_col : -1;
+          const linkTpl = ev.link_template || ''; // e.g. "https://tiktok.com/@{val}"
           return `<div class="card" style="padding:14px 16px;overflow-x:auto">${title}
-            <table class="story-table">
+            <table class="story-table${accentCls}">
               <thead><tr>${(ev.headers || []).map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
               <tbody>
                 ${(ev.rows || []).map(row => `<tr>${row.map((c, idx) => {
                   const style = (ev.col_color_idx === idx && typeof c === 'number' && c >= 0)
                     ? ` style="color:${c>0.5?'#dc2626':(c>0.2?'#ea580c':'#16a34a')};font-weight:600"` : '';
                   const display = (typeof c === 'number') ? c.toLocaleString('id-ID') : escapeHtml(String(c ?? ''));
+                  if (idx === linkCol && linkTpl && c) {
+                    const url = linkTpl.replace('{val}', encodeURIComponent(String(c).replace(/^@/, '')));
+                    return `<td${style}><a class="story-row-link" href="${url}" target="_blank" rel="noopener">${display}</a></td>`;
+                  }
                   return `<td${style}>${display}</td>`;
                 }).join('')}</tr>`).join('')}
               </tbody>
             </table>
           </div>`;
+        }
         case 'donut':
         case 'bar_h':
         case 'stacked_bar':
-        case 'line':
+        case 'line': {
           // Chart — needs ECharts init after mount
-          return `<div class="card" style="padding:14px 16px">${title}
-            <div id="${evId}" class="story-chart${ev.type === 'line' || ev.type === 'stacked_bar' ? '-tall' : ''}"></div>
+          // Donut diberi class extra agar 2 donut beruntun render side-by-side (CSS desktop)
+          const cardCls = (ev.type === 'donut') ? ' story-evidence-donut' : '';
+          const chartCls = (ev.type === 'line' || ev.type === 'stacked_bar') ? '-tall' : '';
+          return `<div class="card${cardCls}" style="padding:14px 16px">${title}
+            <div id="${evId}" class="story-chart${chartCls}"></div>
           </div>`;
+        }
         default:
           return '';
       }
@@ -6670,6 +6752,13 @@
           }],
         };
       } else if (ev.type === 'bar_h') {
+        // Per-item colors (untuk top-N highlight pattern) via ev.itemColors,
+        // fallback ke ev.color global kalau itemColors tidak diset
+        const values = ev.values || [];
+        const itemColors = Array.isArray(ev.itemColors) ? ev.itemColors : null;
+        const data = itemColors
+          ? values.map((v, i) => ({ value: v, itemStyle: { color: itemColors[i] || ev.color || '#1f77b4' } }))
+          : values;
         opt = {
           ...baseOpt,
           tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
@@ -6681,8 +6770,8 @@
           },
           series: [{
             type: 'bar',
-            data: ev.values || [],
-            itemStyle: { color: ev.color || '#1f77b4' },
+            data,
+            itemStyle: itemColors ? undefined : { color: ev.color || '#1f77b4' },
             barWidth: '60%',
             label: { show: true, position: 'right', fontSize: 11,
                      formatter: function(p) {
