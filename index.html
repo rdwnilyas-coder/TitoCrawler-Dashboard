@@ -6213,8 +6213,10 @@
         const allMonths = new Set();
         top5.forEach(n => Object.keys(n.monthly||{}).forEach(m => allMonths.add(m)));
         const months = Array.from(allMonths).sort();
-        const series = top5.map(n => ({
-          name: n.label, color: n.color,
+        // Distinct color per entity (bukan per type) supaya line tidak warna sama
+        const PALETTE = ['#e11d48','#2563eb','#16a34a','#f59e0b','#9333ea','#0891b2','#ec4899','#84cc16','#06b6d4','#f97316'];
+        const series = top5.map((n, i) => ({
+          name: n.label, color: PALETTE[i % PALETTE.length],
           data: months.map(m => (n.monthly||{})[m] || 0),
         }));
         renderKGTimeline(months, series);
