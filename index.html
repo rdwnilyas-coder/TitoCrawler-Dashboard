@@ -6693,9 +6693,10 @@
         }
         case 'table': {
           const accentCls = ev.accent ? ' story-table-accent' : '';
+          const pairCls = ev.layout_pair ? ' story-evidence-half' : '';
           const linkCol = (typeof ev.link_col === 'number') ? ev.link_col : -1;
           const linkTpl = ev.link_template || ''; // e.g. "https://tiktok.com/@{val}"
-          return `<div class="card" style="padding:14px 16px;overflow-x:auto">${title}
+          return `<div class="card${pairCls}" style="padding:14px 16px;overflow-x:auto">${title}
             <table class="story-table${accentCls}">
               <thead><tr>${(ev.headers || []).map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
               <tbody>
