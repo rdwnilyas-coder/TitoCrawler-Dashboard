@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-05-19T13:47:27Z",
+    "generatedAt": "2026-05-20T11:38:32Z",
     "audience": "Tim ahli — balanced view per cerita, ranked by evaluation-need",
     "total_stories": 10,
     "framework": "5W1H + What Now (risiko/mitigasi/roadmap/KPI)",
@@ -727,30 +727,7 @@
                 ]
               ],
               "col_color_idx": 1
-            }
-          ]
-        },
-        "what_now": {
-          "risk_level": "critical",
-          "risk_summary": "Risk CRITICAL. Crisis aktif. Tito perlu rebuttal terstruktur lewat 3 jalur: komunikasi publik intens, komunikasi kebijakan tertulis, dan pemantauan opini real-time. Hindari diam — ambiguity memperparah.",
-          "mitigasi_taktis": [
-            "Komunikasi publik (URGENT): press conference Mendagri tentang status hukum 4 pulau — peraturan, sejarah, sengketa border — dengan bahasa awam.",
-            "Komunikasi publik: tur Aceh — kunjungan ke wilayah terdampak, dialog terbuka dengan tokoh masyarakat + diaspora, dokumentasi ekstensif untuk konten resmi.",
-            "Komunikasi publik: joint statement dengan Gubernur Aceh + Gubernur Sumut untuk show consensus — bahasa empati ke Aceh.",
-            "Pemantauan opini & media: war room media harian selama crisis aktif — pantau hashtag, narasi dominan, channel amplifier setiap 6 jam."
-          ],
-          "roadmap_strategis": [
-            "Komunikasi kebijakan: usulan RUU revisi tata kelola border antar-provinsi — leverage sebagai solusi institusional yang bisa diklaim Mendagri.",
-            "Komunikasi kebijakan: terbitkan policy brief publik (versi awam max 4 hal) tentang governance border antar-provinsi.",
-            "Komunikasi publik: posisikan Tito sebagai protagonis 'resolusi Aceh-Sumut' — flip narrative dari delegitimasi ke prestasi penyelesaian sengketa."
-          ],
-          "kpi": [
-            "Stance kontra TikTok turun ke <60% dalam 6 bulan (saat ini 96%)",
-            "Hashtag #BobbyPencuriPulauAceh hilang dari trending",
-            "Hate Twitter samples tentang 'jual pulau' berkurang signifikan (pantauan bulanan)",
-            "Tur Aceh minimal 2x dalam 3 bulan + dokumentasi terbit publik"
-          ],
-          "evidence": [
+            },
             {
               "ev_id": "slide_action_matrix",
               "type": "action_matrix",
@@ -780,8 +757,28 @@
                 }
               ]
             }
+          ]
+        },
+        "what_now": {
+          "risk_level": "critical",
+          "risk_summary": "Risk CRITICAL. Crisis aktif. Tito perlu rebuttal terstruktur lewat 3 jalur: komunikasi publik intens, komunikasi kebijakan tertulis, dan pemantauan opini real-time. Hindari diam — ambiguity memperparah.",
+          "mitigasi_taktis": [
+            "Komunikasi publik (URGENT): press conference Mendagri tentang status hukum 4 pulau — peraturan, sejarah, sengketa border — dengan bahasa awam.",
+            "Komunikasi publik: tur Aceh — kunjungan ke wilayah terdampak, dialog terbuka dengan tokoh masyarakat + diaspora, dokumentasi ekstensif untuk konten resmi.",
+            "Komunikasi publik: joint statement dengan Gubernur Aceh + Gubernur Sumut untuk show consensus — bahasa empati ke Aceh.",
+            "Pemantauan opini & media: war room media harian selama crisis aktif — pantau hashtag, narasi dominan, channel amplifier setiap 6 jam."
           ],
-          "narasi": ""
+          "roadmap_strategis": [
+            "Komunikasi kebijakan: usulan RUU revisi tata kelola border antar-provinsi — leverage sebagai solusi institusional yang bisa diklaim Mendagri.",
+            "Komunikasi kebijakan: terbitkan policy brief publik (versi awam max 4 hal) tentang governance border antar-provinsi.",
+            "Komunikasi publik: posisikan Tito sebagai protagonis 'resolusi Aceh-Sumut' — flip narrative dari delegitimasi ke prestasi penyelesaian sengketa."
+          ],
+          "kpi": [
+            "Stance kontra TikTok turun ke <60% dalam 6 bulan (saat ini 96%)",
+            "Hashtag #BobbyPencuriPulauAceh hilang dari trending",
+            "Hate Twitter samples tentang 'jual pulau' berkurang signifikan (pantauan bulanan)",
+            "Tur Aceh minimal 2x dalam 3 bulan + dokumentasi terbit publik"
+          ]
         }
       }
     },
@@ -3247,26 +3244,7 @@
                 ]
               ],
               "col_color_idx": 2
-            }
-          ]
-        },
-        "what_now": {
-          "risk_level": "low",
-          "risk_summary": "Posisi solid. Kebijakan tidak kontroversial. Risk minor: kalau ada Pemilukada ulang atau gugatan judicial signifikan di 2026.",
-          "mitigasi_taktis": [
-            "Pemantauan opini & media: monitor kasus PSU (Pemungutan Suara Ulang) per daerah — briefing harian saat ada putusan MK yang berpotensi viral.",
-            "Komunikasi publik: maintain visibility Mendagri di pelantikan momen besar (Gubernur ibu kota provinsi terpilih) dengan rilis terstruktur."
-          ],
-          "roadmap_strategis": [
-            "Komunikasi kebijakan: Tito sebagai narator evaluasi UU Pilkada untuk siklus 2029 — terbitkan policy paper / op-ed di media nasional.",
-            "Komunikasi kebijakan: dokumentasi lessons-learned Pilkada 2024 — bahan sosialisasi ke akademisi, KPU, civil society."
-          ],
-          "kpi": [
-            "Stance pro Pilkada maintain >65% lintas platform",
-            "Mention Pilkada di topic LDA news tetap stabil (decay alami pasca Feb 2025)",
-            "Minimal 2 op-ed / kolom publik Tito tentang demokrasi lokal per tahun"
-          ],
-          "evidence": [
+            },
             {
               "ev_id": "slide_slope_pilkada",
               "type": "slope",
@@ -3294,8 +3272,24 @@
                 }
               ]
             }
+          ]
+        },
+        "what_now": {
+          "risk_level": "low",
+          "risk_summary": "Posisi solid. Kebijakan tidak kontroversial. Risk minor: kalau ada Pemilukada ulang atau gugatan judicial signifikan di 2026.",
+          "mitigasi_taktis": [
+            "Pemantauan opini & media: monitor kasus PSU (Pemungutan Suara Ulang) per daerah — briefing harian saat ada putusan MK yang berpotensi viral.",
+            "Komunikasi publik: maintain visibility Mendagri di pelantikan momen besar (Gubernur ibu kota provinsi terpilih) dengan rilis terstruktur."
           ],
-          "narasi": ""
+          "roadmap_strategis": [
+            "Komunikasi kebijakan: Tito sebagai narator evaluasi UU Pilkada untuk siklus 2029 — terbitkan policy paper / op-ed di media nasional.",
+            "Komunikasi kebijakan: dokumentasi lessons-learned Pilkada 2024 — bahan sosialisasi ke akademisi, KPU, civil society."
+          ],
+          "kpi": [
+            "Stance pro Pilkada maintain >65% lintas platform",
+            "Mention Pilkada di topic LDA news tetap stabil (decay alami pasca Feb 2025)",
+            "Minimal 2 op-ed / kolom publik Tito tentang demokrasi lokal per tahun"
+          ]
         }
       }
     },
@@ -4870,16 +4864,16 @@
               "focus": "rismon",
               "nodes": [
                 {
-                  "id": "rismon",
-                  "label": "rismon",
-                  "value": 0,
-                  "is_focus": true
-                },
-                {
                   "id": "tito",
                   "label": "tito",
                   "value": 0,
                   "is_focus": false
+                },
+                {
+                  "id": "rismon",
+                  "label": "rismon",
+                  "value": 0,
+                  "is_focus": true
                 }
               ],
               "edges": [
@@ -5783,29 +5777,7 @@
                 ]
               ],
               "col_color_idx": 2
-            }
-          ]
-        },
-        "what_now": {
-          "risk_level": "low",
-          "risk_summary": "Risiko reputasi minimal. Cerita ini adalah aset komunikasi — leverage untuk amplifikasi credibility.",
-          "mitigasi_taktis": [
-            "Komunikasi publik: maintain visibility lapangan — 1 kunjungan langsung per 2 minggu ke daerah terdampak (Aceh + Sumut + Sumbar) dengan dokumentasi foto/video.",
-            "Komunikasi publik: rilis cerita warga terdampak (orang nyata, nama, foto, sebelum-sesudah) sebagai bahan IG/FB Kemendagri — bukan rilis birokratis.",
-            "Komunikasi kebijakan: press release bilingual (ID + EN) saat ada momen besar (penyerahan huntara, peresmian) untuk reach media internasional."
-          ],
-          "roadmap_strategis": [
-            "Komunikasi kebijakan: rilis milestone publik per kuartal (huntara → huntap, anggaran terserap, infrastruktur pulih) supaya progres terasa kontinu.",
-            "Komunikasi publik: anniversary 1 tahun PRR (Des 2026) — produksi dokumenter pendek warga + ekspos kepada media nasional.",
-            "Pemantauan opini & media: laporan triwulanan tren sentiment PRR per daerah — antisipasi keluhan dari desa pelosok yang belum tersentuh, jangan tunggu viral."
-          ],
-          "kpi": [
-            "Stance pro PRR ≥85% maintain lintas platform",
-            "Hate rate spesifik topic PRR <10% (saat ini negligible)",
-            "Mention Aceh tetap top-3 provinsi di Entitas (saat ini #1)",
-            "Minimal 1 rilis cerita warga per bulan dari daerah terdampak"
-          ],
-          "evidence": [
+            },
             {
               "ev_id": "slide_bullet_prr",
               "type": "bullet",
@@ -5831,8 +5803,27 @@
               "max": 100,
               "color": "#16a34a"
             }
+          ]
+        },
+        "what_now": {
+          "risk_level": "low",
+          "risk_summary": "Risiko reputasi minimal. Cerita ini adalah aset komunikasi — leverage untuk amplifikasi credibility.",
+          "mitigasi_taktis": [
+            "Komunikasi publik: maintain visibility lapangan — 1 kunjungan langsung per 2 minggu ke daerah terdampak (Aceh + Sumut + Sumbar) dengan dokumentasi foto/video.",
+            "Komunikasi publik: rilis cerita warga terdampak (orang nyata, nama, foto, sebelum-sesudah) sebagai bahan IG/FB Kemendagri — bukan rilis birokratis.",
+            "Komunikasi kebijakan: press release bilingual (ID + EN) saat ada momen besar (penyerahan huntara, peresmian) untuk reach media internasional."
           ],
-          "narasi": ""
+          "roadmap_strategis": [
+            "Komunikasi kebijakan: rilis milestone publik per kuartal (huntara → huntap, anggaran terserap, infrastruktur pulih) supaya progres terasa kontinu.",
+            "Komunikasi publik: anniversary 1 tahun PRR (Des 2026) — produksi dokumenter pendek warga + ekspos kepada media nasional.",
+            "Pemantauan opini & media: laporan triwulanan tren sentiment PRR per daerah — antisipasi keluhan dari desa pelosok yang belum tersentuh, jangan tunggu viral."
+          ],
+          "kpi": [
+            "Stance pro PRR ≥85% maintain lintas platform",
+            "Hate rate spesifik topic PRR <10% (saat ini negligible)",
+            "Mention Aceh tetap top-3 provinsi di Entitas (saat ini #1)",
+            "Minimal 1 rilis cerita warga per bulan dari daerah terdampak"
+          ]
         }
       }
     },
@@ -6988,27 +6979,78 @@
               "type": "line",
               "title": "Top topic bursts (twitter) — filter: omon (timeline burst vs baseline)",
               "months": [
+                "2024-10",
+                "2024-11",
+                "2024-12",
+                "2025-01",
                 "2025-02",
+                "2025-03",
+                "2025-04",
+                "2025-05",
                 "2025-06",
-                "2025-12"
+                "2025-07",
+                "2025-08",
+                "2025-09",
+                "2025-10",
+                "2025-11",
+                "2025-12",
+                "2026-01",
+                "2026-02",
+                "2026-03",
+                "2026-04",
+                "2026-05"
               ],
               "series": [
                 {
                   "name": "Count burst",
                   "color": "#dc2626",
                   "data": [
+                    0,
+                    0,
+                    0,
+                    0,
                     135,
+                    0,
+                    0,
+                    0,
                     272,
-                    350
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    350,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
                   ]
                 },
                 {
                   "name": "Baseline",
                   "color": "#9ca3af",
                   "data": [
+                    0,
+                    0,
+                    0,
+                    0,
                     47.3,
+                    0,
+                    0,
+                    0,
                     116.0,
-                    43.3
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    43.3,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
                   ]
                 }
               ]

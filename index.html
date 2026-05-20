@@ -365,7 +365,7 @@
     /* Desktop: 2-column grid agar donut bisa berdampingan kiri-kanan.
        .story-evidence-donut → 2 donut beruntun auto-pair.
        .story-evidence-half  → explicit paired card (donut + quote panel, dll). */
-    @media (min-width: 1024px) {
+    @media (min-width: 768px) {
       .story-evidence { grid-template-columns: repeat(2, 1fr); }
       .story-evidence > .card { grid-column: span 2; }
       .story-evidence > .card.story-evidence-donut,
@@ -7489,37 +7489,41 @@
         }
         opt = { ...baseOpt, graphic: graphics };
       } else if (ev.type === 'arc_diagram') {
-        // Custom arc via graphic: nodes baseline + half-circle arcs
+        // Pakai series-graph cartesian2d — robust, auto-scale ke container
         const nodes = ev.nodes || []; const edges = ev.edges || [];
-        const W = el.clientWidth || 700; const H = el.clientHeight || 340;
-        const margin = 60;
-        const n = nodes.length;
-        const xs = nodes.map((_, i) => margin + (i + 0.5) * ((W - 2 * margin) / n));
-        const baseY = H * 0.7;
         const maxW = Math.max(...edges.map(e => e.weight || 1), 1);
-        const graphics = [];
-        // Arcs (draw first so nodes appear on top)
-        edges.forEach(e => {
-          const x1 = xs[e.source], x2 = xs[e.target];
-          const radius = Math.abs(x2 - x1) / 2;
-          const cx = (x1 + x2) / 2;
-          const w = e.weight || 1;
-          const lw = 0.8 + 6 * (w / maxW);
-          const alpha = 0.35 + 0.5 * (w / maxW);
-          // Approximate half-circle via cubic bezier
-          const path = `M ${x1} ${baseY} C ${x1} ${baseY - radius * 1.2}, ${x2} ${baseY - radius * 1.2}, ${x2} ${baseY}`;
-          graphics.push({ type: 'path', shape: { pathData: path },
-            style: { fill: 'none', stroke: '#1e3a8a', opacity: alpha, lineWidth: lw } });
-        });
-        // Nodes
-        nodes.forEach((n, i) => {
-          graphics.push({ type: 'circle', shape: { cx: xs[i], cy: baseY, r: 10 },
-            style: { fill: n.color || '#1f77b4', stroke: '#fff', lineWidth: 2 } });
-          graphics.push({ type: 'text', left: xs[i] - 40, top: baseY + 16,
-            style: { text: n.label || '', fill: '#1a1a1a', fontWeight: 700, fontSize: 11,
-              width: 80, overflow: 'break', align: 'center' } });
-        });
-        opt = { ...baseOpt, graphic: graphics };
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'item',
+            formatter: p => {
+              if (p.dataType === 'edge') {
+                const sn = nodes[+p.data.source]?.label || p.data.source;
+                const tn = nodes[+p.data.target]?.label || p.data.target;
+                return `${sn} ↔ ${tn}<br/>weight: ${(p.data.value || 0).toLocaleString('id-ID')}`;
+              }
+              return `<b>${p.name}</b>`;
+            } },
+          xAxis: { type: 'category', data: nodes.map(n => n.label), show: true,
+            axisLine: { show: false }, axisTick: { show: false },
+            splitLine: { show: false },
+            axisLabel: { fontSize: 11, fontWeight: 700, color: '#1a1a1a',
+              interval: 0, lineHeight: 14 } },
+          yAxis: { type: 'value', show: false, min: -0.5, max: 1.2 },
+          grid: { left: 30, right: 30, top: 30, bottom: 50, containLabel: true },
+          series: [{
+            type: 'graph', coordinateSystem: 'cartesian2d', layout: 'none',
+            symbol: 'circle', symbolSize: 22, z: 3,
+            data: nodes.map((n, i) => ({
+              id: String(i), name: n.label, value: [i, 0],
+              itemStyle: { color: n.color || '#1f77b4',
+                borderColor: '#fff', borderWidth: 2 } })),
+            edges: edges.map(e => ({
+              source: String(e.source), target: String(e.target),
+              value: e.weight,
+              lineStyle: {
+                width: Math.max(1, 6 * ((e.weight || 1) / maxW)),
+                color: '#1e3a8a',
+                opacity: 0.35 + 0.5 * ((e.weight || 1) / maxW),
+                curveness: 0.5 + 0.15 * (Math.abs(e.source - e.target) / nodes.length) } })) }] };
       } else if (ev.type === 'waterfall') {
         // Stacked bar trick: invisible "placeholder" series + visible "value" series
         const items = ev.items || []; // [{label, value, type: 'start'|'add'|'sub'|'total'}]
