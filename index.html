@@ -6936,7 +6936,8 @@
               orient: 'horizontal', left: 'center', bottom: 4,
               inRange: { color: ['#e5e7eb', '#bbf7d0', '#86efac', '#22c55e', '#15803d', '#14532d'] },
               text: ['Tinggi', 'Rendah'], calculable: false,
-              itemWidth: 18, itemHeight: 10, textStyle: { fontSize: 10 },
+              // itemWidth = panjang bar saat horizontal, itemHeight = ketebalan
+              itemWidth: 320, itemHeight: 14, textStyle: { fontSize: 10 },
             },
             series: [{
               type: 'map',
