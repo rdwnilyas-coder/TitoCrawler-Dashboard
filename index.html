@@ -6562,11 +6562,70 @@
     // ====== Stories Tab ======
     let STORIES = null;
     let STORY_CHART_INSTANCES = []; // for resize cleanup
+    let INDONESIA_MAP_LOADED = false;
+
+    // Mapping nama provinsi dari NER data (Title Case) ke GeoJSON feature names
+    // (uppercase + old "Irian Jaya" untuk Papua family)
+    const ID_PROV_MAP = {
+      'aceh': 'DI. ACEH',
+      'dki jakarta': 'DKI JAKARTA',
+      'sumatera utara': 'SUMATERA UTARA',
+      'sumatera barat': 'SUMATERA BARAT',
+      'sumatera selatan': 'SUMATERA SELATAN',
+      'jawa barat': 'JAWA BARAT',
+      'jawa tengah': 'JAWA TENGAH',
+      'jawa timur': 'JAWA TIMUR',
+      'di yogyakarta': 'DAERAH ISTIMEWA YOGYAKARTA',
+      'banten': 'PROBANTEN',
+      'bali': 'BALI',
+      'nusa tenggara barat': 'NUSATENGGARA BARAT',
+      'nusa tenggara timur': 'NUSA TENGGARA TIMUR',
+      'kalimantan barat': 'KALIMANTAN BARAT',
+      'kalimantan tengah': 'KALIMANTAN TENGAH',
+      'kalimantan timur': 'KALIMANTAN TIMUR',
+      'kalimantan selatan': 'KALIMANTAN SELATAN',
+      'kalimantan utara': 'KALIMANTAN TIMUR',
+      'sulawesi utara': 'SULAWESI UTARA',
+      'sulawesi tengah': 'SULAWESI TENGAH',
+      'sulawesi selatan': 'SULAWESI SELATAN',
+      'sulawesi tenggara': 'SULAWESI TENGGARA',
+      'sulawesi barat': 'SULAWESI SELATAN',
+      'gorontalo': 'GORONTALO',
+      'maluku': 'MALUKU',
+      'maluku utara': 'MALUKU UTARA',
+      'papua': 'IRIAN JAYA TIMUR',
+      'papua barat': 'IRIAN JAYA BARAT',
+      'papua tengah': 'IRIAN JAYA TENGAH',
+      'papua pegunungan': 'IRIAN JAYA TENGAH',
+      'papua selatan': 'IRIAN JAYA TIMUR',
+      'papua barat daya': 'IRIAN JAYA BARAT',
+      'jambi': 'JAMBI',
+      'riau': 'RIAU',
+      'kepulauan riau': 'RIAU',
+      'bangka belitung': 'BANGKA BELITUNG',
+      'bengkulu': 'BENGKULU',
+      'lampung': 'LAMPUNG',
+    };
+
+    async function ensureIndonesiaMap() {
+      if (INDONESIA_MAP_LOADED) return true;
+      try {
+        const geo = await fetch('data/indonesia_provinces.geojson').then(r => r.json());
+        echarts.registerMap('indonesia', geo);
+        INDONESIA_MAP_LOADED = true;
+        return true;
+      } catch (e) {
+        console.warn('Indonesia GeoJSON gagal di-load, fallback ke bar chart', e);
+        return false;
+      }
+    }
 
     async function renderStories() {
       if (!STORIES) {
         STORIES = await fetch('data/stories.json').then(r => r.json()).catch(() => null);
       }
+      // Pre-load Indonesia map agar geo_intensity bisa render peta
+      await ensureIndonesiaMap();
       if (!STORIES || !STORIES.stories) {
         document.getElementById('story-content').innerHTML =
           '<div class="card"><p>Data stories.json belum tersedia.</p></div>';
@@ -6767,11 +6826,10 @@
           let cardCls = (ev.type === 'donut') ? ' story-evidence-donut' : '';
           if (ev.layout_pair) cardCls += ' story-evidence-half';
           const chartCls = (ev.type === 'line' || ev.type === 'stacked_bar' || ev.type === 'network') ? '-tall' : '';
-          // geo_intensity butuh height proportional ke jumlah item (banyak provinsi)
+          // geo_intensity: peta Indonesia butuh 480px (fixed aspect), bar fallback proportional
           let inlineStyle = '';
           if (ev.type === 'geo_intensity') {
-            const nItems = (ev.labels || []).length;
-            const h = Math.max(420, Math.min(720, nItems * 18 + 40));
+            const h = INDONESIA_MAP_LOADED ? 480 : Math.max(420, Math.min(720, (ev.labels || []).length * 18 + 40));
             inlineStyle = ` style="width:100%;height:${h}px"`;
           }
           return `<div class="card${cardCls}" style="padding:14px 16px">${title}
@@ -6853,43 +6911,80 @@
           }],
         };
       } else if (ev.type === 'geo_intensity') {
-        // Bar_h dengan visualMap green gradient — visualisasi distribusi geografis
-        // Responsive: visualMap di kanan untuk laptop, horizontal di atas untuk mobile
+        // Render sebagai PETA Indonesia kalau GeoJSON sudah ter-register;
+        // fallback ke bar chart kalau peta belum siap.
+        const labels = ev.labels || [];
         const values = ev.values || [];
         const maxV = Math.max(...values, 1);
-        const _isMobileGeo = window.innerWidth < 768;
-        const visualMapOpt = _isMobileGeo
-          ? { min: 0, max: maxV, orient: 'horizontal', left: 'center', top: 4,
+        if (INDONESIA_MAP_LOADED) {
+          // Aggregate values per GeoJSON feature (beberapa provinsi data → 1 feature lama)
+          const agg = {};
+          for (let i = 0; i < labels.length; i++) {
+            const key = (labels[i] || '').toLowerCase().trim();
+            const featName = ID_PROV_MAP[key] || labels[i].toUpperCase();
+            agg[featName] = (agg[featName] || 0) + (values[i] || 0);
+          }
+          const mapData = Object.entries(agg).map(([name, value]) => ({ name, value }));
+          opt = {
+            ...baseOpt,
+            tooltip: {
+              trigger: 'item',
+              formatter: p => `<b>${p.name}</b><br/>${(p.value || 0).toLocaleString('id-ID')} mention`,
+            },
+            visualMap: {
+              min: 0, max: maxV,
+              orient: 'horizontal', left: 'center', bottom: 4,
               inRange: { color: ['#e5e7eb', '#bbf7d0', '#86efac', '#22c55e', '#15803d', '#14532d'] },
               text: ['Tinggi', 'Rendah'], calculable: false,
-              itemWidth: 14, itemHeight: 8, textStyle: { fontSize: 9 } }
-          : { min: 0, max: maxV, orient: 'vertical', right: 12, top: 'middle',
+              itemWidth: 18, itemHeight: 10, textStyle: { fontSize: 10 },
+            },
+            series: [{
+              type: 'map',
+              map: 'indonesia',
+              roam: false,
+              nameProperty: 'Propinsi',
+              data: mapData,
+              label: { show: false },
+              itemStyle: { borderColor: '#ffffff', borderWidth: 0.7,
+                           areaColor: '#f3f4f6' },
+              emphasis: {
+                label: { show: true, color: '#1a1a1a', fontSize: 10, fontWeight: 'bold' },
+                itemStyle: { areaColor: '#f59e0b', borderColor: '#1a1a1a',
+                             borderWidth: 1.2 },
+              },
+            }],
+          };
+        } else {
+          // Fallback bar chart (kalau GeoJSON gagal load)
+          const _isMobileGeo = window.innerWidth < 768;
+          opt = {
+            ...baseOpt,
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                       formatter: p => `<b>${p[0].name}</b><br/>${(p[0].value || 0).toLocaleString('id-ID')} mention` },
+            visualMap: {
+              min: 0, max: maxV,
+              orient: _isMobileGeo ? 'horizontal' : 'vertical',
+              left: _isMobileGeo ? 'center' : undefined,
+              right: _isMobileGeo ? undefined : 12,
+              top: _isMobileGeo ? 4 : 'middle',
               inRange: { color: ['#e5e7eb', '#bbf7d0', '#86efac', '#22c55e', '#15803d', '#14532d'] },
               text: ['Tinggi', 'Rendah'], calculable: false,
-              itemWidth: 12, itemHeight: 120, textStyle: { fontSize: 10 } };
-        const gridConf = _isMobileGeo
-          ? { left: 8, right: 40, top: 36, bottom: 8, containLabel: true }
-          : { left: 8, right: 80, top: 8, bottom: 8, containLabel: true };
-        opt = {
-          ...baseOpt,
-          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
-                     formatter: p => `<b>${p[0].name}</b><br/>${(p[0].value || 0).toLocaleString('id-ID')} mention` },
-          visualMap: visualMapOpt,
-          grid: gridConf,
-          xAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { type: 'dashed' } } },
-          yAxis: {
-            type: 'category', data: ev.labels || [],
-            inverse: true, axisTick: { show: false },
-            axisLabel: { fontSize: _isMobileGeo ? 9 : 11 },
-          },
-          series: [{
-            type: 'bar',
-            data: values,
-            barWidth: '70%',
-            label: { show: true, position: 'right', fontSize: _isMobileGeo ? 9 : 11,
-                     formatter: v => (v.value || 0).toLocaleString('id-ID') },
-          }],
-        };
+              itemWidth: _isMobileGeo ? 14 : 12, itemHeight: _isMobileGeo ? 8 : 120,
+              textStyle: { fontSize: _isMobileGeo ? 9 : 10 },
+            },
+            grid: { left: 8, right: _isMobileGeo ? 40 : 80,
+                    top: _isMobileGeo ? 36 : 8, bottom: 8, containLabel: true },
+            xAxis: { type: 'value', axisLine: { show: false },
+                     splitLine: { lineStyle: { type: 'dashed' } } },
+            yAxis: { type: 'category', data: labels, inverse: true,
+                     axisTick: { show: false },
+                     axisLabel: { fontSize: _isMobileGeo ? 9 : 11 } },
+            series: [{ type: 'bar', data: values, barWidth: '70%',
+                       label: { show: true, position: 'right',
+                                fontSize: _isMobileGeo ? 9 : 11,
+                                formatter: v => (v.value || 0).toLocaleString('id-ID') } }],
+          };
+        }
       } else if (ev.type === 'stacked_bar') {
         opt = {
           ...baseOpt,
