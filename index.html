@@ -6764,13 +6764,18 @@
         case 'network':
         case 'geo_intensity': {
           // Chart — needs ECharts init after mount
-          // Donut diberi class extra agar 2 donut beruntun render side-by-side (CSS desktop)
           let cardCls = (ev.type === 'donut') ? ' story-evidence-donut' : '';
-          // Explicit pair flag — paksa 50% width di desktop (untuk pasangan donut + quote panel dll)
           if (ev.layout_pair) cardCls += ' story-evidence-half';
           const chartCls = (ev.type === 'line' || ev.type === 'stacked_bar' || ev.type === 'network') ? '-tall' : '';
+          // geo_intensity butuh height proportional ke jumlah item (banyak provinsi)
+          let inlineStyle = '';
+          if (ev.type === 'geo_intensity') {
+            const nItems = (ev.labels || []).length;
+            const h = Math.max(420, Math.min(720, nItems * 18 + 40));
+            inlineStyle = ` style="width:100%;height:${h}px"`;
+          }
           return `<div class="card${cardCls}" style="padding:14px 16px">${title}
-            <div id="${evId}" class="story-chart${chartCls}"></div>
+            <div id="${evId}" class="story-chart${chartCls}"${inlineStyle}></div>
           </div>`;
         }
         default:
@@ -6782,7 +6787,7 @@
     function mountEvidenceChart(ev, evId) {
       const el = document.getElementById(evId);
       if (!el) return;
-      if (!['donut','bar_h','stacked_bar','line'].includes(ev.type)) return;
+      if (!['donut','bar_h','stacked_bar','line','network','geo_intensity'].includes(ev.type)) return;
       const chart = echarts.init(el);
       let opt = null;
       const baseOpt = {
@@ -6814,10 +6819,13 @@
         const data = itemColors
           ? values.map((v, i) => ({ value: v, itemStyle: { color: itemColors[i] || ev.color || '#1f77b4' } }))
           : values;
-        // Label area lebar kalau ev.label_width diset (untuk teks panjang)
-        const labelW = ev.label_width || 0; // 0 = auto
+        // Label area lebar kalau ev.label_width diset (untuk teks panjang).
+        // Pada mobile (<768px), cap label_width ke 120px supaya chart tidak overflow ke kanan.
+        const _isMobile = window.innerWidth < 768;
+        const _rawLabelW = ev.label_width || 0;
+        const labelW = (_isMobile && _rawLabelW > 120) ? 120 : _rawLabelW;
         const yAxisLbl = labelW > 0
-          ? { fontSize: 11, width: labelW, overflow: 'break', interval: 0 }
+          ? { fontSize: _isMobile ? 9 : 11, width: labelW, overflow: 'truncate', interval: 0 }
           : { fontSize: 11 };
         const gridLeft = labelW > 0 ? Math.max(labelW + 20, 8) : 8;
         opt = {
@@ -6846,34 +6854,39 @@
         };
       } else if (ev.type === 'geo_intensity') {
         // Bar_h dengan visualMap green gradient — visualisasi distribusi geografis
-        // (substitute peta — provinsi sorted desc, gradasi hijau by intensitas)
+        // Responsive: visualMap di kanan untuk laptop, horizontal di atas untuk mobile
         const values = ev.values || [];
         const maxV = Math.max(...values, 1);
+        const _isMobileGeo = window.innerWidth < 768;
+        const visualMapOpt = _isMobileGeo
+          ? { min: 0, max: maxV, orient: 'horizontal', left: 'center', top: 4,
+              inRange: { color: ['#e5e7eb', '#bbf7d0', '#86efac', '#22c55e', '#15803d', '#14532d'] },
+              text: ['Tinggi', 'Rendah'], calculable: false,
+              itemWidth: 14, itemHeight: 8, textStyle: { fontSize: 9 } }
+          : { min: 0, max: maxV, orient: 'vertical', right: 12, top: 'middle',
+              inRange: { color: ['#e5e7eb', '#bbf7d0', '#86efac', '#22c55e', '#15803d', '#14532d'] },
+              text: ['Tinggi', 'Rendah'], calculable: false,
+              itemWidth: 12, itemHeight: 120, textStyle: { fontSize: 10 } };
+        const gridConf = _isMobileGeo
+          ? { left: 8, right: 40, top: 36, bottom: 8, containLabel: true }
+          : { left: 8, right: 80, top: 8, bottom: 8, containLabel: true };
         opt = {
           ...baseOpt,
           tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
                      formatter: p => `<b>${p[0].name}</b><br/>${(p[0].value || 0).toLocaleString('id-ID')} mention` },
-          visualMap: {
-            min: 0, max: maxV,
-            orient: 'vertical', right: 12, top: 'middle',
-            inRange: { color: ['#e5e7eb', '#bbf7d0', '#86efac', '#22c55e', '#15803d', '#14532d'] },
-            text: ['Tinggi', 'Rendah'],
-            calculable: false,
-            itemWidth: 12, itemHeight: 120,
-            textStyle: { fontSize: 10 },
-          },
-          grid: { left: 8, right: 80, top: 8, bottom: 8, containLabel: true },
+          visualMap: visualMapOpt,
+          grid: gridConf,
           xAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { type: 'dashed' } } },
           yAxis: {
             type: 'category', data: ev.labels || [],
             inverse: true, axisTick: { show: false },
-            axisLabel: { fontSize: 11 },
+            axisLabel: { fontSize: _isMobileGeo ? 9 : 11 },
           },
           series: [{
             type: 'bar',
             data: values,
             barWidth: '70%',
-            label: { show: true, position: 'right', fontSize: 11,
+            label: { show: true, position: 'right', fontSize: _isMobileGeo ? 9 : 11,
                      formatter: v => (v.value || 0).toLocaleString('id-ID') },
           }],
         };
