@@ -6816,21 +6816,73 @@
             </table>
           </div>`;
         }
+        case 'action_matrix': {
+          // HTML grid 3x1 atau 3x3 untuk action/risk/mitigation matrix
+          const cells = ev.cells || [];
+          const cols = ev.cols || cells.length;
+          const pairCls = ev.layout_pair ? ' story-evidence-half' : '';
+          return `<div class="card${pairCls}" style="padding:14px 16px">${title}
+            <div class="story-action-matrix" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px">
+              ${cells.map(c => `
+                <div class="story-action-cell" style="background:${c.bg || '#f3f4f6'};border-left:4px solid ${c.color || '#1f77b4'};padding:10px 12px;border-radius:6px">
+                  <div style="font-size:11pt;font-weight:700;color:${c.color || '#1a1a1a'};margin-bottom:4px">${escapeHtml(c.label || '')}</div>
+                  <div style="font-size:10pt;color:#374151;line-height:1.4">${escapeHtml(c.text || '')}</div>
+                  ${c.kpi ? `<div style="margin-top:6px;font-size:9pt;color:${c.color || '#1f77b4'};font-weight:600">${escapeHtml(c.kpi)}</div>` : ''}
+                </div>`).join('')}
+            </div>
+          </div>`;
+        }
         case 'donut':
         case 'bar_h':
         case 'stacked_bar':
         case 'line':
         case 'network':
-        case 'geo_intensity': {
+        case 'geo_intensity':
+        case 'gauge':
+        case 'radar':
+        case 'treemap':
+        case 'boxplot':
+        case 'funnel':
+        case 'beeswarm':
+        case 'heatmap_grid':
+        case 'calendar_heatmap':
+        case 'dual_axis':
+        case 'area_line':
+        case 'step_line':
+        case 'slope':
+        case 'diverging_bar':
+        case 'tornado':
+        case 'lollipop':
+        case 'bullet':
+        case 'burst_spike':
+        case 'marimekko':
+        case 'pictograph':
+        case 'ridge_plot':
+        case 'venn3':
+        case 'arc_diagram':
+        case 'waterfall': {
           // Chart — needs ECharts init after mount
-          let cardCls = (ev.type === 'donut') ? ' story-evidence-donut' : '';
+          let cardCls = (ev.type === 'donut' || ev.type === 'gauge') ? ' story-evidence-donut' : '';
           if (ev.layout_pair) cardCls += ' story-evidence-half';
-          const chartCls = (ev.type === 'line' || ev.type === 'stacked_bar' || ev.type === 'network') ? '-tall' : '';
+          const tallTypes = ['line','stacked_bar','network','heatmap_grid','treemap','calendar_heatmap','ridge_plot','arc_diagram'];
+          const chartCls = tallTypes.includes(ev.type) ? '-tall' : '';
           // geo_intensity: peta Indonesia butuh 480px (fixed aspect), bar fallback proportional
           let inlineStyle = '';
           if (ev.type === 'geo_intensity') {
             const h = INDONESIA_MAP_LOADED ? 480 : Math.max(420, Math.min(720, (ev.labels || []).length * 18 + 40));
             inlineStyle = ` style="width:100%;height:${h}px"`;
+          } else if (ev.type === 'calendar_heatmap') {
+            inlineStyle = ` style="width:100%;height:240px"`;
+          } else if (ev.type === 'arc_diagram') {
+            inlineStyle = ` style="width:100%;height:340px"`;
+          } else if (ev.type === 'pictograph') {
+            inlineStyle = ` style="width:100%;height:280px"`;
+          } else if (ev.type === 'venn3') {
+            inlineStyle = ` style="width:100%;height:320px"`;
+          } else if (ev.type === 'ridge_plot') {
+            inlineStyle = ` style="width:100%;height:300px"`;
+          } else if (ev.type === 'heatmap_grid' || ev.type === 'marimekko' || ev.type === 'treemap') {
+            inlineStyle = ` style="width:100%;height:320px"`;
           }
           return `<div class="card${cardCls}" style="padding:14px 16px">${title}
             <div id="${evId}" class="story-chart${chartCls}"${inlineStyle}></div>
@@ -6845,7 +6897,11 @@
     function mountEvidenceChart(ev, evId) {
       const el = document.getElementById(evId);
       if (!el) return;
-      if (!['donut','bar_h','stacked_bar','line','network','geo_intensity'].includes(ev.type)) return;
+      const CHART_TYPES = ['donut','bar_h','stacked_bar','line','network','geo_intensity',
+        'gauge','radar','treemap','boxplot','funnel','beeswarm','heatmap_grid','calendar_heatmap',
+        'dual_axis','area_line','step_line','slope','diverging_bar','tornado','lollipop','bullet',
+        'burst_spike','marimekko','pictograph','ridge_plot','venn3','arc_diagram','waterfall'];
+      if (!CHART_TYPES.includes(ev.type)) return;
       const chart = echarts.init(el);
       let opt = null;
       const baseOpt = {
@@ -7061,6 +7117,452 @@
             emphasis: { focus: 'adjacency', lineStyle: { width: 4 } },
           }],
         };
+      } else if (ev.type === 'gauge') {
+        const v = +ev.value || 0;
+        const color = ev.color || '#16a34a';
+        opt = { ...baseOpt,
+          series: [{ type: 'gauge', radius: '85%',
+            startAngle: 200, endAngle: -20,
+            min: 0, max: 100,
+            axisLine: { roundCap: true, lineStyle: { width: 22,
+              color: [[v/100, color], [1, '#e5e7eb']] } },
+            pointer: { show: false }, axisTick: { show: false }, splitLine: { show: false },
+            axisLabel: { show: false }, anchor: { show: false },
+            title: { show: true, offsetCenter: [0, '78%'], fontSize: 11, color: '#6b7280' },
+            detail: { valueAnimation: false, offsetCenter: [0, 0],
+              fontSize: 32, fontWeight: 700, color,
+              formatter: (val) => Math.round(val) + '%' },
+            data: [{ value: v, name: ev.label || '' }] }] };
+      } else if (ev.type === 'radar') {
+        const indicators = (ev.indicators || []).map(n => ({ name: n.name, max: n.max || 100 }));
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'item' },
+          legend: { bottom: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          radar: { indicator: indicators, radius: '60%',
+            axisName: { fontSize: 10, color: '#374151' },
+            splitArea: { areaStyle: { color: ['#f9fafb', '#ffffff'] } } },
+          series: [{ type: 'radar',
+            data: (ev.series || []).map(s => ({
+              name: s.name, value: s.values,
+              areaStyle: { opacity: 0.18, color: s.color },
+              lineStyle: { color: s.color, width: 2 },
+              itemStyle: { color: s.color } })) }] };
+      } else if (ev.type === 'treemap') {
+        opt = { ...baseOpt,
+          tooltip: { formatter: p => `<b>${p.name}</b><br/>${(p.value || 0).toLocaleString('id-ID')}` },
+          series: [{ type: 'treemap', roam: false, nodeClick: false,
+            breadcrumb: { show: false },
+            label: { show: true, fontSize: 12, color: '#fff', fontWeight: 600 },
+            data: (ev.data || []).map(d => ({ name: d.name, value: d.value,
+              itemStyle: { color: d.color || '#1f77b4' } })) }] };
+      } else if (ev.type === 'boxplot') {
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'item', axisPointer: { type: 'shadow' } },
+          grid: { left: 8, right: 24, top: 24, bottom: 8, containLabel: true },
+          xAxis: { type: 'category', data: ev.categories || [], axisLabel: { fontSize: 10 } },
+          yAxis: { type: 'value', name: ev.yname || '' },
+          series: [{ type: 'boxplot',
+            data: (ev.data || []).map((d, i) => ({ value: d,
+              itemStyle: { color: (ev.colors || [])[i] || '#1f77b4',
+                borderColor: (ev.colors || [])[i] || '#1f77b4' } })) }] };
+      } else if (ev.type === 'funnel') {
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'item', formatter: '{b}: {c}' },
+          series: [{ type: 'funnel', left: '10%', right: '10%', top: 10, bottom: 10,
+            sort: 'descending', gap: 2, label: { show: true, position: 'inside', fontSize: 11, color: '#fff' },
+            data: (ev.data || []).map(d => ({ name: d.name, value: d.value,
+              itemStyle: { color: d.color || '#1f77b4' } })) }] };
+      } else if (ev.type === 'beeswarm') {
+        // ev.points = [{x, y_label, group}], y_label = category bucket
+        const groups = ev.groups || [];
+        const series = groups.map(g => ({
+          name: g.name, type: 'scatter', symbolSize: g.size || 8,
+          itemStyle: { color: g.color || '#dc2626', opacity: 0.75 },
+          data: (g.points || []).map(p => [p[0], p[1]]) }));
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'item',
+            formatter: p => `<b>${p.seriesName}</b><br/>${p.value[0]}` },
+          legend: { bottom: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          grid: { left: 8, right: 16, top: 16, bottom: 32, containLabel: true },
+          xAxis: { type: 'value', name: ev.xname || '', axisLabel: { fontSize: 10 } },
+          yAxis: { type: 'category', data: ev.y_categories || [''],
+            axisLabel: { fontSize: 11 }, axisTick: { show: false } },
+          series };
+      } else if (ev.type === 'heatmap_grid') {
+        opt = { ...baseOpt,
+          tooltip: { position: 'top',
+            formatter: p => `${ev.y_labels[p.value[1]]} × ${ev.x_labels[p.value[0]]}<br/><b>${p.value[2]}</b>` },
+          grid: { left: 80, right: 16, top: 30, bottom: 24, containLabel: true },
+          xAxis: { type: 'category', data: ev.x_labels || [],
+            splitArea: { show: true }, axisLabel: { fontSize: 10 } },
+          yAxis: { type: 'category', data: ev.y_labels || [], inverse: true,
+            splitArea: { show: true }, axisLabel: { fontSize: 11 } },
+          visualMap: { min: ev.min || 0, max: ev.max || 100,
+            orient: 'horizontal', left: 'center', bottom: 0,
+            inRange: { color: ev.palette || ['#dbeafe', '#60a5fa', '#1d4ed8'] },
+            itemWidth: 12, itemHeight: 180, textStyle: { fontSize: 10 } },
+          series: [{ type: 'heatmap', data: ev.cells || [],
+            label: { show: true, fontSize: 10, color: '#1a1a1a', fontWeight: 600 } }] };
+      } else if (ev.type === 'calendar_heatmap') {
+        // ev.data = [["YYYY-MM-DD", value], ...]
+        opt = { ...baseOpt,
+          tooltip: { formatter: p => `<b>${p.value[0]}</b><br/>${p.value[1]} aktivitas` },
+          visualMap: { min: 0, max: ev.max || 30, orient: 'horizontal',
+            left: 'center', bottom: 0,
+            inRange: { color: ['#e5e7eb', '#bbf7d0', '#22c55e', '#15803d'] },
+            itemWidth: 12, itemHeight: 160, textStyle: { fontSize: 10 } },
+          calendar: { range: ev.range || ['2024-10', '2026-05'],
+            cellSize: ['auto', 14], top: 18, left: 30, right: 16,
+            dayLabel: { fontSize: 9 }, monthLabel: { fontSize: 10 },
+            yearLabel: { fontSize: 10, position: 'top' },
+            itemStyle: { borderColor: '#fff', borderWidth: 1 } },
+          series: [{ type: 'heatmap', coordinateSystem: 'calendar',
+            data: ev.data || [] }] };
+      } else if (ev.type === 'dual_axis') {
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+          legend: { top: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          grid: { left: 8, right: 50, top: 36, bottom: 8, containLabel: true },
+          xAxis: { type: 'category', data: ev.months || [], axisLabel: { fontSize: 10 } },
+          yAxis: [
+            { type: 'value', name: ev.left_name || '', position: 'left',
+              axisLabel: { color: ev.left_color || '#1f77b4' },
+              nameTextStyle: { color: ev.left_color || '#1f77b4' } },
+            { type: 'value', name: ev.right_name || '', position: 'right',
+              axisLabel: { color: ev.right_color || '#dc2626' },
+              nameTextStyle: { color: ev.right_color || '#dc2626' } } ],
+          series: (ev.series || []).map((s, i) => ({
+            name: s.name, type: 'line', smooth: true,
+            yAxisIndex: s.yAxis || 0, symbol: 'circle', symbolSize: 5,
+            itemStyle: { color: s.color }, lineStyle: { color: s.color, width: 2 },
+            areaStyle: s.area ? { color: s.color, opacity: 0.15 } : null,
+            data: s.data })) };
+      } else if (ev.type === 'area_line') {
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+          legend: { top: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          grid: { left: 8, right: 24, top: 36, bottom: 8, containLabel: true },
+          xAxis: { type: 'category', data: ev.months || [], boundaryGap: false,
+            axisLabel: { fontSize: 10 } },
+          yAxis: { type: 'value' },
+          series: (ev.series || []).map(s => ({
+            name: s.name, type: 'line', smooth: true, symbol: 'circle', symbolSize: 4,
+            itemStyle: { color: s.color },
+            lineStyle: { color: s.color, width: 2 },
+            areaStyle: { color: s.color, opacity: 0.30 },
+            data: s.data })) };
+      } else if (ev.type === 'step_line') {
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'axis' },
+          legend: { top: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          grid: { left: 8, right: 24, top: 36, bottom: 8, containLabel: true },
+          xAxis: { type: 'category', data: ev.x || [], axisLabel: { fontSize: 10 } },
+          yAxis: { type: 'value' },
+          series: (ev.series || []).map(s => ({
+            name: s.name, type: 'line', step: s.step || 'end',
+            symbol: 'circle', symbolSize: 5,
+            itemStyle: { color: s.color }, lineStyle: { color: s.color, width: 2 },
+            data: s.data })) };
+      } else if (ev.type === 'slope') {
+        // ev.series = [{name, color, points: [v0, v1]}], 2 categories ev.x = ['Pre', 'Post']
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'item',
+            formatter: p => `<b>${p.seriesName}</b><br/>${ev.x[p.dataIndex]}: ${p.value}` },
+          legend: { top: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          grid: { left: 60, right: 60, top: 36, bottom: 8, containLabel: true },
+          xAxis: { type: 'category', data: ev.x || ['Pre', 'Post'], boundaryGap: false,
+            axisLabel: { fontSize: 11 } },
+          yAxis: { type: 'value', axisLabel: { formatter: '{value}%' } },
+          series: (ev.series || []).map(s => ({
+            name: s.name, type: 'line',
+            symbol: 'circle', symbolSize: 12,
+            itemStyle: { color: s.color }, lineStyle: { color: s.color, width: 3 },
+            label: { show: true, formatter: '{c}%', fontSize: 11, fontWeight: 600,
+              color: s.color },
+            data: s.points })) };
+      } else if (ev.type === 'diverging_bar') {
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: p => p.map(s => `${s.seriesName}: ${Math.abs(s.value)}`).join('<br/>') },
+          legend: { top: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          grid: { left: 80, right: 30, top: 36, bottom: 8, containLabel: true },
+          xAxis: { type: 'value',
+            axisLabel: { formatter: v => Math.abs(v) + (ev.unit || '%') },
+            splitLine: { lineStyle: { type: 'dashed' } } },
+          yAxis: { type: 'category', data: ev.labels || [], inverse: true,
+            axisTick: { show: false }, axisLabel: { fontSize: 11 } },
+          series: (ev.series || []).map(s => ({
+            name: s.name, type: 'bar', stack: 'total',
+            itemStyle: { color: s.color },
+            label: { show: true, position: s.position || 'inside',
+              formatter: p => Math.abs(p.value) + (ev.unit || '%'), fontSize: 10,
+              color: '#fff', fontWeight: 600 },
+            data: s.data })) };
+      } else if (ev.type === 'tornado') {
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: p => p.map(s => `${s.seriesName}: ${Math.abs(s.value)}%`).join('<br/>') },
+          legend: { top: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          grid: { left: 70, right: 30, top: 36, bottom: 8, containLabel: true },
+          xAxis: { type: 'value', position: 'top',
+            axisLabel: { formatter: v => Math.abs(v) + '%' },
+            splitLine: { lineStyle: { type: 'dashed' } }, max: 100, min: -100 },
+          yAxis: { type: 'category', data: ev.labels || [], inverse: true,
+            axisTick: { show: false }, axisLabel: { fontSize: 11 } },
+          series: [
+            { name: ev.left_name || 'Kontra', type: 'bar', stack: 't',
+              itemStyle: { color: ev.left_color || '#dc2626' },
+              label: { show: true, position: 'left',
+                formatter: p => Math.abs(p.value) + '%', fontSize: 10, color: ev.left_color || '#dc2626', fontWeight: 600 },
+              data: (ev.left || []).map(v => -v) },
+            { name: ev.right_name || 'Pro', type: 'bar', stack: 't',
+              itemStyle: { color: ev.right_color || '#16a34a' },
+              label: { show: true, position: 'right',
+                formatter: p => Math.abs(p.value) + '%', fontSize: 10, color: ev.right_color || '#16a34a', fontWeight: 600 },
+              data: ev.right || [] } ] };
+      } else if (ev.type === 'lollipop') {
+        // bar tipis + scatter besar di ujung
+        const values = ev.values || [];
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+          grid: { left: 90, right: 30, top: 16, bottom: 8, containLabel: true },
+          xAxis: { type: 'value',
+            splitLine: { lineStyle: { type: 'dashed' } } },
+          yAxis: { type: 'category', data: ev.labels || [], inverse: true,
+            axisTick: { show: false }, axisLabel: { fontSize: 11 } },
+          series: [
+            { type: 'bar', barWidth: 3, itemStyle: { color: ev.color || '#1f77b4' }, data: values },
+            { type: 'scatter', symbolSize: 14, itemStyle: { color: ev.color || '#1f77b4' },
+              label: { show: true, position: 'right', fontSize: 11, fontWeight: 600,
+                formatter: p => (p.value[0] || 0).toLocaleString('id-ID') },
+              data: values.map((v, i) => [v, i]) } ] };
+      } else if (ev.type === 'bullet') {
+        // overlapping bars: target (gray bg) + actual (color) + markLine target value
+        const targets = ev.targets || []; const actuals = ev.actuals || [];
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+          grid: { left: 100, right: 30, top: 16, bottom: 8, containLabel: true },
+          xAxis: { type: 'value', max: ev.max || 100,
+            axisLabel: { formatter: '{value}%' },
+            splitLine: { lineStyle: { type: 'dashed' } } },
+          yAxis: { type: 'category', data: ev.labels || [], inverse: true,
+            axisTick: { show: false }, axisLabel: { fontSize: 11 } },
+          series: [
+            { name: 'Range', type: 'bar', barGap: '-100%', barWidth: '70%',
+              itemStyle: { color: '#e5e7eb' }, data: ev.ranges || actuals.map(_ => 100), silent: true },
+            { name: 'Target', type: 'bar', barWidth: '70%',
+              itemStyle: { color: 'rgba(0,0,0,0)',
+                borderColor: '#1a1a1a', borderType: 'dashed', borderWidth: 1.5 },
+              data: targets, silent: true },
+            { name: 'Aktual', type: 'bar', barGap: '-100%', barWidth: '30%',
+              itemStyle: { color: ev.color || '#16a34a' },
+              label: { show: true, position: 'right', fontSize: 11, fontWeight: 600,
+                color: ev.color || '#16a34a', formatter: '{c}%' },
+              data: actuals } ] };
+      } else if (ev.type === 'burst_spike') {
+        // line baseline + scatter highlight peak
+        const peakIdx = ev.peak_index;
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'axis' },
+          grid: { left: 8, right: 24, top: 24, bottom: 8, containLabel: true },
+          xAxis: { type: 'category', data: ev.months || [], axisLabel: { fontSize: 10 } },
+          yAxis: { type: 'value', name: ev.yname || '' },
+          series: [
+            { name: ev.name || 'z-score', type: 'line', smooth: true,
+              itemStyle: { color: '#1f77b4' }, lineStyle: { color: '#1f77b4', width: 2 },
+              data: ev.values || [],
+              markLine: { silent: true, symbol: 'none',
+                lineStyle: { color: '#9ca3af', type: 'dashed' },
+                data: [{ yAxis: ev.baseline || 0, label: { formatter: 'baseline' } }] } },
+            { name: 'Peak', type: 'scatter', symbolSize: 18,
+              itemStyle: { color: '#dc2626' },
+              label: { show: true, formatter: ev.peak_label || 'PEAK',
+                position: 'top', fontSize: 11, fontWeight: 700, color: '#dc2626' },
+              data: (peakIdx != null) ? [[peakIdx, (ev.values || [])[peakIdx]]] : [] } ] };
+      } else if (ev.type === 'marimekko') {
+        // Variable-width stacked bars: use custom render with graphic
+        // Sederhana: render sebagai stacked horizontal bar dengan width proporsional ke total per platform
+        const cats = ev.x_labels || []; const series = ev.series || [];
+        const totals = cats.map((_, i) => series.reduce((sum, s) => sum + (s.data[i] || 0), 0));
+        const grandTotal = totals.reduce((a, b) => a + b, 0) || 1;
+        const widths = totals.map(t => (t / grandTotal) * 100);
+        // Convert to normalized 100% stacked, dengan width info di label
+        const seriesOut = series.map((s, si) => ({
+          name: s.name, type: 'bar', stack: 'mk',
+          itemStyle: { color: s.color || '#1f77b4' },
+          barWidth: '90%',
+          label: { show: true, fontSize: 10, color: '#fff', fontWeight: 600,
+            formatter: p => { const v = p.value; return v > 8 ? v + '%' : ''; } },
+          data: cats.map((_, i) => {
+            const total = totals[i] || 1;
+            return Math.round((s.data[i] || 0) / total * 100);
+          }) }));
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: p => `<b>${p[0].axisValue}</b><br/>` +
+              p.map(s => `${s.seriesName}: ${s.value}%`).join('<br/>') +
+              `<br/><i>n=${totals[p[0].dataIndex]}</i>` },
+          legend: { top: 0, selectedMode: false, textStyle: { fontSize: 11 } },
+          grid: { left: 8, right: 24, top: 36, bottom: 32, containLabel: true },
+          xAxis: { type: 'category',
+            data: cats.map((c, i) => `${c}\n(${widths[i].toFixed(0)}%)`),
+            axisLabel: { fontSize: 10, lineHeight: 13 } },
+          yAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%' } },
+          series: seriesOut };
+      } else if (ev.type === 'pictograph') {
+        // 10 box × N rows via ECharts graphic API
+        const rows = ev.rows || []; // [{label, rate, color}]
+        const W = el.clientWidth || 600;
+        const H = el.clientHeight || 280;
+        const labelW = 90, boxW = (W - labelW - 80) / 10 * 0.85;
+        const boxH = Math.min(28, (H - 20) / rows.length * 0.6);
+        const gap = (W - labelW - 80) / 10 * 0.15;
+        const graphics = [];
+        rows.forEach((r, ri) => {
+          const y = 20 + ri * (H - 30) / rows.length;
+          const nFull = Math.floor(r.rate / 10);
+          const frac = (r.rate / 10) - nFull;
+          // Label
+          graphics.push({ type: 'text', left: 8, top: y + boxH / 2 - 6,
+            style: { text: r.label, fill: '#1a1a1a', fontWeight: 700, fontSize: 12 } });
+          for (let j = 0; j < 10; j++) {
+            const alpha = j < nFull ? 1.0 : (j === nFull ? frac : 0.18);
+            graphics.push({ type: 'rect', left: labelW + j * (boxW + gap), top: y,
+              shape: { width: boxW, height: boxH },
+              style: { fill: r.color, opacity: alpha, stroke: r.color, lineWidth: 1.2 } });
+          }
+          // Rate label
+          graphics.push({ type: 'text', left: labelW + 10 * (boxW + gap) + 8, top: y + boxH / 2 - 7,
+            style: { text: r.rate.toFixed(1) + '%', fill: r.color, fontWeight: 700, fontSize: 13 } });
+        });
+        opt = { ...baseOpt, graphic: graphics };
+      } else if (ev.type === 'ridge_plot') {
+        // Multi-line dengan y-offset per series
+        const series = ev.series || []; // [{name, color, values}]
+        const x = ev.x || [];
+        const offset = ev.offset || 1.2;
+        const seriesOut = series.map((s, i) => ({
+          name: s.name, type: 'line', smooth: true,
+          symbol: 'none', lineStyle: { color: s.color, width: 2 },
+          itemStyle: { color: s.color },
+          areaStyle: { color: s.color, opacity: 0.35, origin: 'start' },
+          data: s.values.map(v => v + (series.length - 1 - i) * offset) }));
+        const yMax = (series.length - 1) * offset + 1.5;
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'axis' },
+          legend: { top: 0, selectedMode: false, textStyle: { fontSize: 11 },
+            data: series.map(s => s.name) },
+          grid: { left: 40, right: 24, top: 36, bottom: 8, containLabel: true },
+          xAxis: { type: 'category', data: x, boundaryGap: false, axisLabel: { fontSize: 10 } },
+          yAxis: { type: 'value', show: false, max: yMax, min: 0 },
+          series: seriesOut };
+      } else if (ev.type === 'venn3') {
+        // 3 lingkaran overlap via graphic
+        const sets = ev.sets || [];
+        const W = el.clientWidth || 500;
+        const H = el.clientHeight || 320;
+        const cx = W / 2, cy = H / 2 - 10;
+        const r = Math.min(W, H) * 0.22;
+        const positions = [
+          { x: cx - r * 0.6, y: cy - r * 0.3 },
+          { x: cx + r * 0.6, y: cy - r * 0.3 },
+          { x: cx, y: cy + r * 0.6 },
+        ];
+        const graphics = [];
+        sets.forEach((s, i) => {
+          const p = positions[i];
+          graphics.push({ type: 'circle', shape: { cx: p.x, cy: p.y, r },
+            style: { fill: s.color, opacity: 0.35, stroke: s.color, lineWidth: 2 } });
+          const labelDx = (i === 0) ? -r * 0.9 : (i === 1) ? r * 0.9 : 0;
+          const labelDy = (i === 2) ? r * 1.2 : -r * 1.1;
+          graphics.push({ type: 'text', left: p.x + labelDx - 50, top: p.y + labelDy,
+            style: { text: s.name, fill: s.color, fontWeight: 700, fontSize: 13,
+              width: 100, overflow: 'break', align: 'center' } });
+          // Center value count
+          graphics.push({ type: 'text', left: p.x - 20, top: p.y - 8,
+            style: { text: String(s.value || ''), fill: s.color, fontWeight: 700, fontSize: 20 } });
+        });
+        // Optional intersection labels
+        if (ev.intersection) {
+          graphics.push({ type: 'text', left: cx - 30, top: cy + 5,
+            style: { text: ev.intersection, fill: '#1a1a1a', fontWeight: 700, fontSize: 11 } });
+        }
+        opt = { ...baseOpt, graphic: graphics };
+      } else if (ev.type === 'arc_diagram') {
+        // Custom arc via graphic: nodes baseline + half-circle arcs
+        const nodes = ev.nodes || []; const edges = ev.edges || [];
+        const W = el.clientWidth || 700; const H = el.clientHeight || 340;
+        const margin = 60;
+        const n = nodes.length;
+        const xs = nodes.map((_, i) => margin + (i + 0.5) * ((W - 2 * margin) / n));
+        const baseY = H * 0.7;
+        const maxW = Math.max(...edges.map(e => e.weight || 1), 1);
+        const graphics = [];
+        // Arcs (draw first so nodes appear on top)
+        edges.forEach(e => {
+          const x1 = xs[e.source], x2 = xs[e.target];
+          const radius = Math.abs(x2 - x1) / 2;
+          const cx = (x1 + x2) / 2;
+          const w = e.weight || 1;
+          const lw = 0.8 + 6 * (w / maxW);
+          const alpha = 0.35 + 0.5 * (w / maxW);
+          // Approximate half-circle via cubic bezier
+          const path = `M ${x1} ${baseY} C ${x1} ${baseY - radius * 1.2}, ${x2} ${baseY - radius * 1.2}, ${x2} ${baseY}`;
+          graphics.push({ type: 'path', shape: { pathData: path },
+            style: { fill: 'none', stroke: '#1e3a8a', opacity: alpha, lineWidth: lw } });
+        });
+        // Nodes
+        nodes.forEach((n, i) => {
+          graphics.push({ type: 'circle', shape: { cx: xs[i], cy: baseY, r: 10 },
+            style: { fill: n.color || '#1f77b4', stroke: '#fff', lineWidth: 2 } });
+          graphics.push({ type: 'text', left: xs[i] - 40, top: baseY + 16,
+            style: { text: n.label || '', fill: '#1a1a1a', fontWeight: 700, fontSize: 11,
+              width: 80, overflow: 'break', align: 'center' } });
+        });
+        opt = { ...baseOpt, graphic: graphics };
+      } else if (ev.type === 'waterfall') {
+        // Stacked bar trick: invisible "placeholder" series + visible "value" series
+        const items = ev.items || []; // [{label, value, type: 'start'|'add'|'sub'|'total'}]
+        let running = 0;
+        const placeholder = []; const positive = []; const negative = []; const total = [];
+        items.forEach(it => {
+          if (it.type === 'start' || it.type === 'total') {
+            placeholder.push(0);
+            positive.push(0); negative.push(0);
+            total.push(it.value);
+            running = it.value;
+          } else if (it.value >= 0) {
+            placeholder.push(running);
+            positive.push(it.value); negative.push(0); total.push(0);
+            running += it.value;
+          } else {
+            running += it.value;
+            placeholder.push(running);
+            positive.push(0); negative.push(-it.value); total.push(0);
+          }
+        });
+        opt = { ...baseOpt,
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: p => `<b>${p[0].axisValue}</b><br/>${items[p[0].dataIndex].value}` },
+          grid: { left: 8, right: 24, top: 24, bottom: 8, containLabel: true },
+          xAxis: { type: 'category', data: items.map(i => i.label), axisLabel: { fontSize: 10 } },
+          yAxis: { type: 'value' },
+          series: [
+            { name: 'placeholder', type: 'bar', stack: 't', itemStyle: { color: 'rgba(0,0,0,0)' }, data: placeholder, silent: true },
+            { name: 'Total', type: 'bar', stack: 't',
+              itemStyle: { color: ev.total_color || '#1e3a8a' },
+              label: { show: true, position: 'top', fontSize: 11, fontWeight: 600 },
+              data: total },
+            { name: 'Pro', type: 'bar', stack: 't',
+              itemStyle: { color: ev.pos_color || '#16a34a' },
+              label: { show: true, position: 'top', fontSize: 11,
+                formatter: p => p.value ? '+' + p.value : '' },
+              data: positive },
+            { name: 'Kontra', type: 'bar', stack: 't',
+              itemStyle: { color: ev.neg_color || '#dc2626' },
+              label: { show: true, position: 'top', fontSize: 11,
+                formatter: p => p.value ? '−' + p.value : '' },
+              data: negative } ] };
       }
       if (opt) chart.setOption(opt, true);
       STORY_CHART_INSTANCES.push(chart);
