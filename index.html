@@ -6933,11 +6933,13 @@
             },
             visualMap: {
               min: 0, max: maxV,
-              orient: 'horizontal', left: 'center', bottom: 4,
+              orient: 'horizontal', left: 'center', bottom: 8,
               inRange: { color: ['#e5e7eb', '#bbf7d0', '#86efac', '#22c55e', '#15803d', '#14532d'] },
               text: ['Tinggi', 'Rendah'], calculable: false,
-              // itemWidth = panjang bar saat horizontal, itemHeight = ketebalan
-              itemWidth: 320, itemHeight: 14, textStyle: { fontSize: 10 },
+              // ECharts visualMap convention: itemWidth = ketebalan strip,
+              // itemHeight = panjang strip (regardless of orient).
+              // Wide horizontal bar → itemWidth (thin) + itemHeight (long).
+              itemWidth: 14, itemHeight: 320, textStyle: { fontSize: 11 },
             },
             series: [{
               type: 'map',
