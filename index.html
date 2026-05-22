@@ -7212,10 +7212,13 @@
             inRange: { color: ['#e5e7eb', '#bbf7d0', '#22c55e', '#15803d'] },
             itemWidth: 12, itemHeight: 160, textStyle: { fontSize: 10 } },
           calendar: { range: ev.range || ['2024-10', '2026-05'],
-            cellSize: ['auto', 14], top: 18, left: 30, right: 16,
-            dayLabel: { fontSize: 9 }, monthLabel: { fontSize: 10 },
-            yearLabel: { fontSize: 10, position: 'top' },
-            itemStyle: { borderColor: '#fff', borderWidth: 1 } },
+            cellSize: ['auto', 20], top: 36, left: 45, right: 20,
+            dayLabel: { fontSize: 10, color: '#374151' },
+            monthLabel: { fontSize: 11, fontWeight: 'bold', color: '#1e3a8a',
+              nameMap: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'] },
+            yearLabel: { show: true, fontSize: 13, fontWeight: 'bold',
+              color: '#1e3a8a', margin: 30 },
+            itemStyle: { borderColor: '#fff', borderWidth: 1.5 } },
           series: [{ type: 'heatmap', coordinateSystem: 'calendar',
             data: ev.data || [] }] };
       } else if (ev.type === 'dual_axis') {

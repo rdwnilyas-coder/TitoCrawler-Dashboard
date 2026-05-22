@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-05-21T23:16:15Z",
+    "generatedAt": "2026-05-22T00:11:35Z",
     "audience": "Tim ahli — balanced view per cerita, ranked by evaluation-need",
     "total_stories": 10,
     "framework": "5W1H + What Now (risiko/mitigasi/roadmap/KPI)",
@@ -5591,7 +5591,7 @@
             {
               "ev_id": "slide_calendar_prr",
               "type": "calendar_heatmap",
-              "title": "Kalender aktivitas PRR — distribusi mention 'pascabencana' per hari",
+              "title": "Kalender aktivitas PRR — distribusi mention 'pascabencana' per hari (Des 2025 – Mei 2026)",
               "data": [
                 [
                   "2025-12-04",
@@ -5755,8 +5755,8 @@
                 ]
               ],
               "range": [
-                "2024-10",
-                "2026-05"
+                "2025-12",
+                "2026-04"
               ],
               "max": 3
             }
