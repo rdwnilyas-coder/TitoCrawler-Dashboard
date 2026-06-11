@@ -109,6 +109,13 @@
       border-bottom-color: var(--accent);
     }
     nav.tabs button:hover:not(.active) { color: var(--text); }
+    .card:has(.empty-x){display:none}
+    nav.tabs button.sub {
+      padding-left: 32px;
+      font-size: 12.5px;
+      font-weight: 400;
+      opacity: 0.8;
+    }
     /* Mobile dropdown — replaces scrollable tabs */
     .tab-mobile {
       display: none;
@@ -208,6 +215,11 @@
         background: rgba(225, 29, 72, 0.06);
         border-left-color: var(--accent) !important;
         border-bottom-color: transparent !important;
+      }
+      nav.tabs button.sub {
+        padding-left: 30px;
+        font-size: 11.5px;
+        opacity: 0.78;
       }
       nav.tabs button:hover:not(.active) {
         background: #f9fafb;
@@ -499,18 +511,18 @@
   </header>
 
   <nav class="tabs" id="tabs-desktop">
-    <button class="active" data-tab="overview">📰 Portal</button>
-    <button data-tab="articles">📄 Articles</button>
+    <button class="active" data-tab="overview">📰 News Portal</button>
+    <button class="sub" data-tab="articles">↳ Articles</button>
     <button data-tab="youtube">🎥 YouTube</button>
-    <button data-tab="yt-comments">💬 YT Comments</button>
+    <button class="sub" data-tab="yt-comments">↳ Comments</button>
     <button data-tab="tiktok">🎵 TikTok</button>
-    <button data-tab="tt-comments">💬 TT Comments</button>
+    <button class="sub" data-tab="tt-comments">↳ Comments</button>
     <button data-tab="instagram">📷 Instagram</button>
-    <button data-tab="ig-comments">💬 IG Comments</button>
+    <button class="sub" data-tab="ig-comments">↳ Comments</button>
     <button data-tab="twitter">🐦 Twitter</button>
-    <button data-tab="tw-comments">💬 TW Replies</button>
+    <button class="sub" data-tab="tw-comments">↳ Replies</button>
     <button data-tab="facebook">📘 Facebook</button>
-    <button data-tab="fb-comments">💬 FB Comments</button>
+    <button class="sub" data-tab="fb-comments">↳ Comments</button>
     <button data-tab="ner">🏷️ Analisis NER</button>
     <button data-tab="topic">🧩 Topic Modelling</button>
     <button data-tab="sna-socmed">📡 SNA Sosmed</button>
@@ -524,18 +536,18 @@
   <div class="tab-mobile" role="tablist" aria-label="Pilih tab">
     <label for="tab-select">Tab</label>
     <select id="tab-select" aria-label="Pilih tab">
-      <option value="overview">📰 Portal</option>
-      <option value="articles">📄 Articles</option>
+      <option value="overview">📰 News Portal</option>
+      <option value="articles">&nbsp;&nbsp;&nbsp;↳ Articles</option>
       <option value="youtube">🎥 YouTube</option>
-      <option value="yt-comments">💬 YT Comments</option>
+      <option value="yt-comments">&nbsp;&nbsp;&nbsp;↳ Comments</option>
       <option value="tiktok">🎵 TikTok</option>
-      <option value="tt-comments">💬 TT Comments</option>
+      <option value="tt-comments">&nbsp;&nbsp;&nbsp;↳ Comments</option>
       <option value="instagram">📷 Instagram</option>
-      <option value="ig-comments">💬 IG Comments</option>
+      <option value="ig-comments">&nbsp;&nbsp;&nbsp;↳ Comments</option>
       <option value="twitter">🐦 Twitter</option>
-      <option value="tw-comments">💬 TW Replies</option>
+      <option value="tw-comments">&nbsp;&nbsp;&nbsp;↳ Replies</option>
       <option value="facebook">📘 Facebook</option>
-      <option value="fb-comments">💬 FB Comments</option>
+      <option value="fb-comments">&nbsp;&nbsp;&nbsp;↳ Comments</option>
       <option value="ner">🏷️ Analisis NER</option>
       <option value="topic">🧩 Topic Modelling</option>
       <option value="sna-socmed">📡 SNA Sosmed</option>
@@ -2250,7 +2262,7 @@
   </main>
 
   <footer>
-    Developed by Dr. Ridwan Ilyas
+    Developed by Dr. Ridwan Ilyas and team for Arvion Studio &copy; 2026
   </footer>
 
   <!-- Data is loaded lazily from data/*.json (no embedded blobs) -->
@@ -3642,7 +3654,7 @@
       if (!el) return;
       const data = _nerTopOfType(etype, 20).reverse(); // ECharts displays bottom-to-top
       if (!data.length) {
-        el.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:40px 0">Tidak ada data ${etype} di sumber ini</div>`;
+        el.innerHTML = '<i class="empty-x"></i>';
         return;
       }
       const chart = echarts.init(el);
@@ -4075,7 +4087,7 @@
       const rawEdges = net.edges || [];
       if (!rawNodes.length) {
         document.getElementById('chart-ner-sna').innerHTML =
-          '<div style="padding:60px;text-align:center;color:#9ca3af">Tidak ada network data</div>';
+          '<i class="empty-x"></i>';
         return;
       }
 
@@ -4195,7 +4207,7 @@
       const el = document.getElementById('chart-ner-evt-sna');
       if (!el) return;
       if (!rawNodes.length) {
-        el.innerHTML = '<div style="padding:60px;text-align:center;color:#9ca3af">Tidak ada event network data</div>';
+        el.innerHTML = '<i class="empty-x"></i>';
         return;
       }
 
@@ -4295,7 +4307,7 @@
       const el = document.getElementById('chart-ner-bipartite');
       if (!el) return;
       if (!allEdges.length) {
-        el.innerHTML = '<div style="padding:60px;text-align:center;color:#9ca3af">Tidak ada bipartite data</div>';
+        el.innerHTML = '<i class="empty-x"></i>';
         return;
       }
 
@@ -4326,7 +4338,7 @@
           && personsSet.has(e.person) && eventsSet.has(e.event));
 
         if (!edges.length) {
-          el.innerHTML = '<div style="padding:60px;text-align:center;color:#9ca3af">Tidak ada edge pada filter ini — turunkan min weight</div>';
+          el.innerHTML = '';
           return;
         }
 
@@ -4435,7 +4447,7 @@
       const elTotal = document.getElementById('chart-ner-evt-monthly-total');
       if (!elMain) return;
       if (!events.length) {
-        elMain.innerHTML = '<div style="padding:60px;text-align:center;color:#9ca3af">Tidak ada data event temporal</div>';
+        elMain.innerHTML = '<i class="empty-x"></i>';
         return;
       }
 
@@ -4598,7 +4610,7 @@
       const data = (TOPIC && TOPIC.sources && TOPIC.sources[source]) || null;
       if (!data) {
         document.getElementById('topic-kpi-row').innerHTML =
-          `<div style="padding:12px;color:#9ca3af">No data for ${source}</div>`;
+          '<i class="empty-x"></i>';
         return;
       }
       _topicState.source = source;
@@ -4666,7 +4678,7 @@
           center: ['50%', '60%'],
           avoidLabelOverlap: true,
           itemStyle: { borderColor: '#fff', borderWidth: 2 },
-          label: { fontSize: 10, formatter: '{b|T{@topicId}}\n{c} docs', rich: { b: { fontWeight: 'bold' } } },
+          label: { fontSize: 10, formatter: p => `T${p.data.topicId}\n${p.percent.toFixed(1)}%` },
           data: items,
         }]
       }, true);
@@ -4713,7 +4725,7 @@
       const monthly = data.monthly || {};
       const months = Object.keys(monthly).sort();
       if (!months.length) {
-        el.innerHTML = '<div style="padding:40px;text-align:center;color:#9ca3af">Tidak ada data temporal</div>';
+        el.innerHTML = '<i class="empty-x"></i>';
         return;
       }
       const mode = document.getElementById('topic-time-mode')?.value || 'absolute';
@@ -4767,7 +4779,7 @@
       const docs = (data.top_docs || {})[String(tid)] || [];
       const tbody = document.querySelector('#topic-docs-table tbody');
       if (!docs.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af">Tidak ada dokumen untuk topik ini</td></tr>';
+        tbody.innerHTML = '';
         return;
       }
       tbody.innerHTML = docs.map((d, i) => {
@@ -4799,7 +4811,7 @@
       const ins = (TOPIC_INSIGHTS && TOPIC_INSIGHTS.ner_crosstab && TOPIC_INSIGHTS.ner_crosstab[src]) || [];
       const row = ins.find(x => x.id === tid);
       if (!row || !row.by_type || !Object.keys(row.by_type).length) {
-        grid.innerHTML = '<div style="padding:14px;color:#9ca3af;grid-column:1/-1">Tidak ada NER overlay untuk topic ini (kemungkinan dokumen tidak ter-NER, mis. komentar socmed di-skip dari NER per-doc).</div>';
+        grid.innerHTML = '<i class="empty-x"></i>';
         return;
       }
       grid.innerHTML = Object.entries(row.by_type).map(([t, items]) => {
@@ -4850,7 +4862,7 @@
       const bursts = (TOPIC_INSIGHTS && TOPIC_INSIGHTS.bursts && TOPIC_INSIGHTS.bursts[src]) || [];
       const tbody = document.querySelector('#topic-bursts-table tbody');
       if (!bursts.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af">Tidak ada burst (≥2σ) untuk sumber ini</td></tr>';
+        tbody.innerHTML = '';
         return;
       }
       // Pakai readable label dari TOPIC.sources[src].topics[id]
@@ -4931,7 +4943,7 @@
       const rows = rep.rows || [];
       const tbody = document.querySelector('#topic-reporter-table tbody');
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af">No data</td></tr>';
+        tbody.innerHTML = '';
         return;
       }
       // Lookup readable label news
@@ -4974,7 +4986,7 @@
       }
       const tbody = document.querySelector('#topic-sim-table tbody');
       if (!pairs.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af">Tidak ada similarity > 0.05</td></tr>';
+        tbody.innerHTML = '';
         return;
       }
       // Lookup readable labels untuk source a dan b
@@ -5005,7 +5017,7 @@
       const pairs = (ll.pairs || []).slice().sort((x, y) => y.best_correlation - x.best_correlation);
       const tbody = document.querySelector('#topic-leadlag-table tbody');
       if (!pairs.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af">No data</td></tr>';
+        tbody.innerHTML = '';
         return;
       }
       tbody.innerHTML = pairs.map(p => {
@@ -5345,7 +5357,7 @@
       if (!CROSS) return;
       const rows = (CROSS.sentiment_x_topic || {})[SENTIMENT_STATE.source] || [];
       const tbody = document.querySelector('#cross-senttopic-table tbody');
-      if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#9ca3af">No data</td></tr>'; return; }
+      if (!rows.length) { tbody.innerHTML = ''; return; }
       // Pakai readable label dari TOPIC kalau tersedia
       const readableMap = {};
       const src = SENTIMENT_STATE.source;
@@ -5383,7 +5395,7 @@
       const items = (data.sarcasm_samples || []);
       const el = document.getElementById('sarcasm-samples');
       if (!items.length) {
-        el.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:8px">Tidak ada sample sarkasme yang di-curate untuk platform ini.</div>';
+        el.innerHTML = '<i class="empty-x"></i>';
         return;
       }
       const labelColor = (lbl) => lbl === 'positive' ? SENTIMENT_COLORS.positive
@@ -5599,7 +5611,7 @@
       const p = BOT_DATA.platforms[BOTC_STATE.source];
       const top10 = (p.accounts || []).slice(0, 10);
       const el = document.getElementById('botc-samples');
-      if (!top10.length) { el.innerHTML = '<div style="color:#9ca3af;padding:12px">Tidak ada data sample</div>'; return; }
+      if (!top10.length) { el.innerHTML = '<i class="empty-x"></i>'; return; }
       el.innerHTML = top10.map((a, i) => {
         const samples = a.samples || [];
         if (!samples.length) {
@@ -5655,7 +5667,7 @@
       const accounts = (p.accounts || []).filter(a => a.bot_score >= min).slice(0, 80);
       const tbody = document.querySelector('#botc-table tbody');
       if (!accounts.length) {
-        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:#9ca3af">Tidak ada akun dengan bot_score >= ${min}</td></tr>`;
+        tbody.innerHTML = '';
         return;
       }
       tbody.innerHTML = accounts.map((a, i) => {
@@ -5681,7 +5693,7 @@
       const swarms = p.swarms || [];
       const el = document.getElementById('botc-swarms');
       if (!swarms.length) {
-        el.innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af">Tidak ada swarm terdeteksi pada platform ini (threshold: ≥5 akun, similarity ≥0.50, window 5 menit)</div>';
+        el.innerHTML = '<i class="empty-x"></i>';
         return;
       }
       el.innerHTML = swarms.map((s, i) => `
@@ -5760,7 +5772,7 @@
       const rows = data[HATE_STATE.source] || [];
       const el = document.getElementById('chart-hate-event-overlay');
       if (!el) return;
-      if (!rows.length) { el.innerHTML = '<div style="padding:30px;text-align:center;color:#9ca3af">No data</div>'; return; }
+      if (!rows.length) { el.innerHTML = ''; return; }
       const months = rows.map(r => r.month);
       const hateData = rows.map(r => r.hate);
       const rateData = rows.map(r => Math.round(r.rate * 1000) / 10);
@@ -5794,7 +5806,7 @@
       const samples = data.hate_samples || [];
       const el = document.getElementById('hate-samples');
       if (!samples.length) {
-        el.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:8px">Tidak ada sample memenuhi filter quality.</div>';
+        el.innerHTML = '';
         return;
       }
       el.innerHTML = `
@@ -5883,7 +5895,7 @@
       const rows = data.top_hate_authors || [];
       const tbody = document.querySelector('#hate-accounts-table tbody');
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af">Tidak ada akun dengan hate_rate >=20%</td></tr>';
+        tbody.innerHTML = '';
         return;
       }
       tbody.innerHTML = rows.map((r, i) => {
@@ -5951,7 +5963,7 @@
       const data = STANCE.sources[STANCE_STATE.source]?.[kebijakan];
       if (!data) {
         document.getElementById('stance-kpi-row').innerHTML =
-          '<div style="padding:12px;color:#9ca3af">Tidak ada dokumen untuk kebijakan ini di platform aktif.</div>';
+          '<i class="empty-x"></i>';
         ['chart-stance-donut','chart-stance-monthly'].forEach(id => {
           const el = document.getElementById(id); if (el) el.innerHTML = '';
         });
@@ -6040,7 +6052,7 @@
       const data = STANCE.sources[STANCE_STATE.source] || {};
       const kebs = Object.keys(data);
       const el = document.getElementById('chart-stance-by-kebijakan');
-      if (!kebs.length) { el.innerHTML = '<div style="padding:30px;text-align:center;color:#9ca3af">Tidak ada data</div>'; return; }
+      if (!kebs.length) { el.innerHTML = ''; return; }
       const labels = kebs.map(k => k.length > 30 ? k.slice(0, 28) + '…' : k);
       const chart = echarts.init(el);
       chart.setOption({
@@ -6491,7 +6503,7 @@
 
     function renderKGTable(rows, headers, fields) {
       const w = document.getElementById('kg-table-wrapper');
-      if (!rows.length) { w.innerHTML = '<p style="padding:20px;color:var(--text-muted)">No data dalam scope.</p>'; return; }
+      if (!rows.length) { w.innerHTML = '<i class="empty-x"></i>'; return; }
       const fmt = (v) => typeof v === 'number' ? v.toLocaleString('id-ID') : escapeHtml(String(v ?? ''));
       w.innerHTML = `<table class="kg-table">
         <thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
